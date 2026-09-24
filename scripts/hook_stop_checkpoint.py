@@ -22,6 +22,8 @@ def main() -> None:
     if payload.get("stop_hook_active"):
         return
     try:
+        if not L.lesson_session(payload.get("transcript_path"), payload.get("session_id", "")):
+            return  # only lesson/review sessions are held to the checkpoint rule
         state = L.load_state()
         slug = state.get("active_topic")
         if not slug or slug not in state["topics"]:

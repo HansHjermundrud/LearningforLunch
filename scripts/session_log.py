@@ -9,9 +9,10 @@ and appends reading-relevant content to the current log target:
   - the learner's chosen answers     -> [!example] Answer
 
 Tool calls, tool output and thinking are skipped. Nothing is logged unless
-state.log_target is set (a lesson or review is active), so ordinary coding
-sessions in this repo never touch the vault. Never blocks the session: any
-error is written to state/.log/hooks.log and the hook exits 0.
+state.log_target is set AND this Claude Code session is a lesson or review
+session (see learnlib.lesson_session), so ordinary coding sessions in this
+repo never touch the vault. Never blocks the session: any error is written to
+state/.log/hooks.log and the hook exits 0.
 """
 from __future__ import annotations
 
@@ -74,8 +75,8 @@ def format_question(block: dict) -> str:
     return "\n\n".join(out)
 
 
-def process(transcript: pathlib.Path, cursor_path: pathlib.Path, target: pathlib.Path) -> int:
-    cursor = L.read_json(cursor_path, {"offset": 0, "pending": {}})
+def process(transcript: pathlib.Path, cursor_path: pathlib.Path, target: pathlib.Path, initial_offset: int = 0) -> int:
+    cursor = L.read_json(cursor_path, {"offset": initial_offset, "pending": {}})
     offset = int(cursor.get("offset", 0))
     pending = dict(cursor.get("pending", {}))
     size = transcript.stat().st_size
@@ -150,8 +151,11 @@ def main() -> None:
         if not transcript_path or not pathlib.Path(transcript_path).exists():
             return
         session_id = payload.get("session_id") or pathlib.Path(transcript_path).stem
+        lesson = L.lesson_session(transcript_path, session_id)
+        if not lesson:
+            return  # not a lesson/review session: never touch the vault
         cursor_path = L.dir_path("stateDir") / ".cursors" / f"{session_id}.json"
-        written = process(pathlib.Path(transcript_path), cursor_path, L.resolve(target))
+        written = process(pathlib.Path(transcript_path), cursor_path, L.resolve(target), int(lesson.get("offset", 0)))
         if written:
             L.hook_log(f"session_log: appended {written} block(s) to {L.rel(target)}")
     except Exception as exc:  # noqa: BLE001

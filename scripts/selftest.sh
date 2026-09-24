@@ -46,6 +46,23 @@ $E new --topic tcp-reliability --name checksum-js --lang js --title "Checksum in
 $E list
 set +e; $E check exercises/tcp-reliability/checksum; echo "check exit=$? (expected 1: placeholder test)"; set -e
 
+echo "== transcripts"
+# lesson.jsonl: the learner typed /teach, so the session is a lesson from line 1
+cat > lesson.jsonl <<'EOF'
+{"type":"user","isSidechain":false,"timestamp":"2026-09-24T08:59:00.000Z","message":{"role":"user","content":"<command-name>/teach</command-name>\n<command-message>teach</command-message>\n<command-args>TCP</command-args>"}}
+{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:00:00.000Z","message":{"role":"user","content":"Teach me TCP"}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T09:00:05.000Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"x"},{"type":"text","text":"Let's start from packets. $x^2$"},{"type":"tool_use","id":"toolu_1","name":"AskUserQuestion","input":{"questions":[{"header":"Probe","question":"What is a packet?","options":[{"label":"A unit of data","description":"d1"},{"label":"A cable"}],"multiSelect":false}]}}]}}
+{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:01:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":[{"type":"text","text":"User selected: A unit of data"}]}]}}
+{"type":"user","isSidechain":true,"timestamp":"2026-09-24T09:01:00.000Z","message":{"role":"user","content":"sidechain noise"}}
+{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:02:00.000Z","message":{"role":"user","content":[{"type":"text","text":"<command-name>/teach</command-name>"}]}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T09:02:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Correct. Next node."}]}}
+EOF
+# build.jsonl: an ordinary coding session in the repo; mentions state.py only inside a Write, never as a lesson marker
+cat > build.jsonl <<'EOF'
+{"type":"user","isSidechain":false,"timestamp":"2026-09-24T10:00:00.000Z","message":{"role":"user","content":"Improve the scripts please"}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Editing state.py now."},{"type":"tool_use","id":"toolu_9","name":"Write","input":{"file_path":"x.md","content":"run python3 scripts/state.py start \"T\" then resume"}}]}}
+EOF
+
 echo "== hooks"
 echo '{"source":"startup"}' | python3 scripts/hook_session_start.py | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['hookSpecificOutput']['additionalContext'])"
 python3 - <<'EOF'
@@ -54,23 +71,23 @@ p='state/state.json'; s=json.load(open(p)); t=s['topics'][s['active_topic']]
 t['updated']=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=30)).isoformat()
 json.dump(s,open(p,'w'))
 EOF
-echo '{"stop_hook_active":false}' | python3 scripts/hook_stop_checkpoint.py | grep -q '"block"' && echo "stop hook blocks when stale: ok"
-if echo '{"stop_hook_active":true}' | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block on second stop"; exit 1; else echo "stop hook passes on second stop: ok"; fi
+LESSON="{\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}"
+BUILD="{\"session_id\":\"t2\",\"transcript_path\":\"$TMP/build.jsonl\"}"
+echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q '"block"' && echo "stop hook blocks when stale in a lesson session: ok"
+if echo "$BUILD" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a non-lesson session"; exit 1; else echo "stop hook ignores a non-lesson session: ok"; fi
+if echo "{\"stop_hook_active\":true,\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block on second stop"; exit 1; else echo "stop hook passes on second stop: ok"; fi
 $S checkpoint "fresh"
-if echo '{}' | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block when fresh"; exit 1; else echo "stop hook passes when fresh: ok"; fi
-echo '{"trigger":"auto"}' | python3 scripts/hook_precompact.py
+if echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block when fresh"; exit 1; else echo "stop hook passes when fresh: ok"; fi
+echo "{\"trigger\":\"auto\",\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}" | python3 scripts/hook_precompact.py
+test -f state/.cursors/t1.lesson && echo "lesson flag cached: ok"
+test ! -f state/.cursors/t2.lesson && echo "no flag for build session: ok"
 
 echo "== session log"
-cat > transcript.jsonl <<'EOF'
-{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:00:00.000Z","message":{"role":"user","content":"Teach me TCP"}}
-{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T09:00:05.000Z","message":{"role":"assistant","content":[{"type":"thinking","thinking":"x"},{"type":"text","text":"Let's start from packets. $x^2$"},{"type":"tool_use","id":"toolu_1","name":"AskUserQuestion","input":{"questions":[{"header":"Probe","question":"What is a packet?","options":[{"label":"A unit of data","description":"d1"},{"label":"A cable"}],"multiSelect":false}]}}]}}
-{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:01:00.000Z","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"toolu_1","content":[{"type":"text","text":"User selected: A unit of data"}]}]}}
-{"type":"user","isSidechain":true,"timestamp":"2026-09-24T09:01:00.000Z","message":{"role":"user","content":"sidechain noise"}}
-{"type":"user","isSidechain":false,"timestamp":"2026-09-24T09:02:00.000Z","message":{"role":"user","content":[{"type":"text","text":"<command-name>/teach</command-name>"}]}}
-{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T09:02:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Correct. Next node."}]}}
-EOF
-echo "{\"session_id\":\"t1\",\"transcript_path\":\"$TMP/transcript.jsonl\"}" | python3 scripts/session_log.py
-echo "{\"session_id\":\"t1\",\"transcript_path\":\"$TMP/transcript.jsonl\"}" | python3 scripts/session_log.py
+before=$(wc -c < "$NOTE")
+echo "$BUILD" | python3 scripts/session_log.py
+test "$(wc -c < "$NOTE")" -eq "$before" && echo "build session not mirrored: ok" || { echo "FAIL: build session leaked into the note"; exit 1; }
+echo "$LESSON" | python3 scripts/session_log.py
+echo "$LESSON" | python3 scripts/session_log.py
 echo "--- note content:"; cat "$NOTE"
 n=$(grep -c "TEACHER" "$NOTE"); test "$n" -eq 2 && echo "teacher blocks: 2 ok" || { echo "FAIL teacher blocks $n"; exit 1; }
 grep -q "sidechain noise" "$NOTE" && { echo "FAIL sidechain logged"; exit 1; } || echo "sidechain skipped ok"

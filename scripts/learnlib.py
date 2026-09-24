@@ -173,6 +173,82 @@ def save_state(state: dict) -> None:
     write_json(state_path(), state)
 
 
+# --- lesson-session detection ------------------------------------------------
+
+LESSON_SKILLS = {"teach", "review"}
+_STATE_CMD = re.compile(r"scripts/state\.py\s+(start|resume|log-target)\b")
+_SLASH_CMD = re.compile(r"<command-name>/(teach|review)\b")
+
+
+def lesson_flag_path(session_id: str) -> pathlib.Path:
+    return dir_path("stateDir") / ".cursors" / f"{session_id}.lesson"
+
+
+def _entry_marks_lesson(entry: dict) -> bool:
+    if entry.get("isSidechain"):
+        return False
+    message = entry.get("message") or {}
+    content = message.get("content")
+    if entry.get("type") == "user":
+        if isinstance(content, str):
+            text = content
+        elif isinstance(content, list):
+            text = "\n".join(b.get("text", "") for b in content if isinstance(b, dict) and b.get("type") == "text")
+        else:
+            text = ""
+        return bool(_SLASH_CMD.search(text))
+    if entry.get("type") == "assistant" and isinstance(content, list):
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            name = block.get("name")
+            inp = block.get("input") or {}
+            if name == "Skill" and str(inp.get("skill", "")).split(":")[-1] in LESSON_SKILLS:
+                return True
+            if name == "Bash" and _STATE_CMD.search(str(inp.get("command", ""))):
+                return True
+    return False
+
+
+def lesson_session(transcript_path, session_id: str) -> dict | None:
+    """Is this Claude Code session a lesson or review session?
+
+    A session counts from the moment /teach or /review was invoked (typed as a
+    slash command or loaded through the Skill tool), or a Bash call ran
+    state.py start / resume / log-target. Ordinary coding sessions in this repo
+    never qualify, so the hooks leave them alone. The answer is cached in a
+    flag file together with the byte offset where the lesson began, so the
+    logger can start mirroring from there and not from the session start.
+    """
+    if not session_id:
+        return None
+    flag = lesson_flag_path(session_id)
+    cached = read_json(flag, None)
+    if isinstance(cached, dict):
+        return cached
+    if not transcript_path:
+        return None
+    transcript = pathlib.Path(transcript_path)
+    if not transcript.exists():
+        return None
+    offset = 0
+    with open(transcript, "rb") as handle:
+        for raw in handle:
+            line_offset = offset
+            offset += len(raw)
+            if b"command-name" not in raw and b'"Skill"' not in raw and b"state.py" not in raw:
+                continue
+            try:
+                entry = json.loads(raw)
+            except Exception:  # noqa: BLE001
+                continue
+            if _entry_marks_lesson(entry):
+                data = {"offset": line_offset, "found": ts()}
+                write_json(flag, data)
+                return data
+    return None
+
+
 def hook_log(message: str) -> None:
     """Best-effort diagnostics for hooks (never raises)."""
     try:

@@ -22,7 +22,7 @@ def main() -> None:
     try:
         state = L.load_state()
         target = state.get("log_target")
-        if target:
+        if target and L.lesson_session(payload.get("transcript_path"), payload.get("session_id", "")):
             L.append_text(L.resolve(target), f"\n\n> [!note] Teacher context compacted ({trigger}) {L.fmt_local(L.ts())}; state restored from state/progress.md\n")
         L.hook_log(f"precompact: {trigger}")
     except Exception as exc:  # noqa: BLE001
