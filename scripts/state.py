@@ -12,7 +12,8 @@ Usage (run from the repo root):
   python3 scripts/state.py start "Title" [--goal "..."] [--slug slug]
   python3 scripts/state.py goal "what the learner actually wants"
   python3 scripts/state.py edge "strand: floor=..., ceiling=..."
-  python3 scripts/state.py plan-set < plan.json      # {"mermaid": "...", "nodes": [{"id","label","depends":[],"why":""}]}
+  python3 scripts/state.py plan-set < plan.json      # {"nodes": [{"id","label","depends":[],"why":""}]}
+  python3 scripts/state.py plan-show [NODE]          # generated mermaid map (ids in labels); NODE = local view
   python3 scripts/state.py plan-approve
   python3 scripts/state.py node-add ID "label" [--depends a,b]
   python3 scripts/state.py node-done ID "one-line summary" [--check short|mcq|code|none]
@@ -64,6 +65,84 @@ def _node_line(node: dict) -> str:
     check = f" [{check}]" if check and check != "none" else ""
     summary = f" — {node['summary']}" if node.get("summary") else ""
     return f"{mark} {node['id']} {node.get('label', '')}{check}{summary}"
+
+
+def _head(label: str) -> str:
+    """The first clause of a label, for compact references."""
+    for sep in (":", ";", " (", " - "):
+        idx = label.find(sep)
+        if idx >= 12:
+            return label[:idx].strip()
+    return label.strip()
+
+
+def _short(label: str, width: int = 30, max_lines: int = 3) -> str:
+    """Wrap a label onto up to max_lines lines for a mermaid box; ellipsis if longer."""
+    label = label.replace('"', "'")
+    words = label.split()
+    lines: list[str] = []
+    current = ""
+    for word in words:
+        candidate = f"{current} {word}".strip()
+        if len(candidate) <= width or not current:
+            current = candidate
+        else:
+            lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    if len(lines) > max_lines:
+        lines = lines[:max_lines]
+        lines[-1] = lines[-1][: width - 1].rstrip() + "…"
+    return "<br>".join(lines)
+
+
+def plan_mermaid(topic: dict, focus: str | None = None) -> str:
+    """Deterministic map generated from the plan: ids in every label, edges from
+    `depends`, done/shaky/current coloured. With `focus`, only that node, what it
+    builds on and what builds on it."""
+    plan = topic.get("plan") or {}
+    nodes = plan.get("nodes", [])
+    if not nodes:
+        return plan.get("mermaid", "")
+    ids = {n["id"] for n in nodes}
+    keep = ids
+    if focus:
+        keep = {focus}
+        keep |= {d for n in nodes if n["id"] == focus for d in n.get("depends", [])}
+        keep |= {n["id"] for n in nodes if focus in n.get("depends", [])}
+    shown = [n for n in nodes if n["id"] in keep]
+    lines = ["graph TD"]
+    for n in shown:
+        lines.append(f'  {n["id"]}["{n["id"]} · {_short(n.get("label", ""))}"]')
+    for n in shown:
+        for d in n.get("depends", []):
+            if d in keep and d in ids:
+                lines.append(f"  {d} --> {n['id']}")
+    done = [n["id"] for n in shown if n.get("status") == "done"]
+    shaky = [n["id"] for n in shown if n.get("status") == "shaky"]
+    lines.append("  classDef done fill:#d9efe9,stroke:#0e7c74,color:#1b2430")
+    lines.append("  classDef shaky fill:#fbe9d7,stroke:#b9600a,color:#1b2430")
+    lines.append("  classDef current fill:#fff4c2,stroke:#b8860b,stroke-width:2px,color:#1b2430")
+    if done:
+        lines.append("  class " + ",".join(done) + " done")
+    if shaky:
+        lines.append("  class " + ",".join(shaky) + " shaky")
+    if focus and focus in ids:
+        lines.append(f"  class {focus} current")
+    return "\n".join(lines)
+
+
+def node_context(topic: dict, node_id: str) -> str:
+    """One line placing a node in the plan, for the teacher to paste when a node starts."""
+    nodes = {n["id"]: n for n in topic.get("plan", {}).get("nodes", [])}
+    node = nodes.get(node_id)
+    if not node:
+        return f"Node {node_id} is not in the plan."
+    name = lambda i: f"{i} · {_head(nodes[i]['label'])}" if i in nodes else i  # noqa: E731
+    builds_on = ", ".join(name(d) for d in node.get("depends", [])) or "nothing (a foundation)"
+    leads_to = ", ".join(name(n["id"]) for n in nodes.values() if node_id in n.get("depends", [])) or "the goal directly"
+    return f"**{node_id} · {node['label']}**\nBuilds on: {builds_on}.\nLeads to: {leads_to}."
 
 
 def summary_text(state: dict, verbose: bool = False) -> str:
@@ -139,10 +218,11 @@ def write_progress(state: dict) -> None:
                     f"| {n['id']} | {n.get('label','')} | {', '.join(n.get('depends', []))} | "
                     f"{n.get('status','pending')} | {n.get('check','') or ''} | {n.get('summary','') or ''} |"
                 )
-        if plan.get("mermaid"):
+        mermaid = plan_mermaid(topic)
+        if mermaid:
             out.append("")
             out.append("```mermaid")
-            out.append(plan["mermaid"].strip())
+            out.append(mermaid.strip())
             out.append("```")
         log = topic.get("log", [])
         if log:
@@ -274,6 +354,23 @@ def cmd_plan_set(args, state):
     topic["next"] = "Present the plan (prose + mermaid map) and wait for the learner's go-ahead."
     _touch(topic, "plan-set", f"{len(nodes)} nodes")
     _save(state, f"Plan recorded with {len(nodes)} nodes (not yet approved).")
+
+
+def cmd_plan_show(args, state):
+    slug, topic = _topic(state)
+    nodes = topic.get("plan", {}).get("nodes", [])
+    if not nodes:
+        print("No plan recorded yet.")
+        return
+    if args.node:
+        print(node_context(topic, args.node))
+        print()
+    print("```mermaid")
+    print(plan_mermaid(topic, args.node))
+    print("```")
+    if not args.node:
+        done = sum(1 for n in nodes if n.get("status") == "done")
+        print(f"\n{done}/{len(nodes)} nodes done. Green = done, orange = shaky, yellow = current. Refer to nodes as `id · label`.")
 
 
 def cmd_plan_approve(args, state):
@@ -409,6 +506,7 @@ def main(argv=None):
     p = sub.add_parser("goal"); p.add_argument("text"); p.set_defaults(fn=cmd_goal)
     p = sub.add_parser("edge"); p.add_argument("text"); p.set_defaults(fn=cmd_edge)
     sub.add_parser("plan-set").set_defaults(fn=cmd_plan_set)
+    p = sub.add_parser("plan-show"); p.add_argument("node", nargs="?"); p.set_defaults(fn=cmd_plan_show)
     sub.add_parser("plan-approve").set_defaults(fn=cmd_plan_approve)
     p = sub.add_parser("node-add"); p.add_argument("id"); p.add_argument("label"); p.add_argument("--depends"); p.set_defaults(fn=cmd_node_add)
     p = sub.add_parser("node-done"); p.add_argument("id"); p.add_argument("summary"); p.add_argument("--check", choices=["short", "mcq", "code", "none"]); p.set_defaults(fn=cmd_node_done)

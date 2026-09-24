@@ -41,7 +41,7 @@ Socratic or expository, per stretch and per the learner's energy: Socratic (pose
 
 | Need | Use |
 |---|---|
-| Multiple-choice question, graded or not | `AskUserQuestion`. It cannot grade, so you grade in the next message. Add "I don't know" as the last option of every gradable question. Never put the answer in an option description. |
+| Multiple-choice question, graded or not | `AskUserQuestion`, exactly ONE question per call (several questions in one call caused accidental submits). It cannot grade, so you grade in the next message. Add "I don't know" as the last option of every gradable question. Never put the answer in an option description. |
 | Short-answer question | Ask in plain chat and end the turn. First commit the model answer: `python3 scripts/srs.py add --type short ...` (prints the card id). After the reply, grade 0-5, explain, then `python3 scripts/srs.py grade <id> <q>`. |
 | Coding task | The `code-task` skill. |
 | Verify a fact, scope a topic | The `researcher` subagent via the Agent tool. Give it the full question; it has no memory of the lesson. |
@@ -99,12 +99,11 @@ Scope the field first with the researcher: core concepts, the real first princip
 
 Stress-test the roots: is each foundation genuinely an unconditional truth for this learner, or a disguised theorem that derives from something simpler? If it derives, push it down.
 
-Record the plan (JSON on stdin), then present it in chat: a few sentences of approach, plus the dependency map as a ```mermaid``` graph (roots at the top, the goal as the sink; the note renders it). Keep it small: a map, not the territory.
+Record the plan as JSON on stdin. Node ids are `n1`, `n2`, ... in teaching order; `depends` lists the ids a node builds on. Labels are short noun phrases (under 45 characters), because they appear inside the map.
 
 ```
 python3 scripts/state.py plan-set <<'EOF'
-{"mermaid": "graph TD\n  A[all communication is packets] --> B[packets can be lost]\n  B --> C[reliability must be built on top]",
- "nodes": [
+{"nodes": [
   {"id": "n1", "label": "All communication is packets", "depends": [], "why": "unconditional truth; the atomic unit"},
   {"id": "n2", "label": "Packets can be lost or reordered", "depends": ["n1"]},
   {"id": "n3", "label": "Reliability is built on top of packets", "depends": ["n2"]}
@@ -112,11 +111,13 @@ python3 scripts/state.py plan-set <<'EOF'
 EOF
 ```
 
+Then present it in chat: a few sentences of approach, then the map. Never hand-write the map. Run `python3 scripts/state.py plan-show` and paste its ```mermaid block verbatim: it is generated from the plan, so every box shows the node id and label the way you will refer to them, and done nodes are coloured as the lesson progresses. Keep the plan small enough that the map is readable: 6 to 12 nodes for one topic; split a bigger subject into several topics.
+
 Then stop and wait for the learner's go-ahead. When they approve: `python3 scripts/state.py plan-approve`. If they change the scope, revise with `node-add` or a new `plan-set`.
 
 ### Phase 3: teach (the loop)
 
-Build the graph one node at a time. Every node, foundational or derived, gets the same four steps:
+Build the graph one node at a time. Always name a node as `id · label` (for example `n6 · Data scoping`), never as a bare id, so the learner can find it on the map. When you start a node, run `python3 scripts/state.py plan-show n6` and paste its output (one line placing the node, plus the local map of what it builds on and what builds on it) before you teach it. Every node, foundational or derived, gets the same four steps:
 
 1. **Motivate.** Why do we need this node right now? What problem does it solve?
 2. **Establish.** A foundation: state it plainly, at face value. A derived step: build it from what is already established via a motivated move, Socratic or expository. A Socratic step with a right answer is still asked as a gradable question.
