@@ -6,8 +6,14 @@ place to describe how you learn best. Keep it short.
 ## About me
 
 - Background: (e.g. "informatics student, comfortable with Python, rusty on maths")
-- Languages I code in: Python, JavaScript
+- Languages I code in: Python, JavaScript, C/C++
 - Native language: (the lesson is written in English unless you say otherwise)
+
+## Current goal
+
+- Learn parallel programming with OpenMP: the shared-memory model, parallel regions, work-sharing
+  loops, data scoping, synchronization, reductions and tasks, and how to reason about speedup
+  and correctness (race conditions, false sharing, load balance). Exercises in C with `-fopenmp`.
 
 ## How I learn
 
