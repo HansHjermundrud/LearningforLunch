@@ -73,6 +73,13 @@ json.dump(s,open(p,'w'))
 EOF
 LESSON="{\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}"
 BUILD="{\"session_id\":\"t2\",\"transcript_path\":\"$TMP/build.jsonl\"}"
+if echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a lesson that just started"; exit 1; else echo "stop hook gives a fresh lesson session grace: ok"; fi
+python3 - <<'EOF'
+import json,datetime
+p='state/.cursors/t1.lesson'; d=json.load(open(p))
+d['found']=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=30)).isoformat()
+json.dump(d,open(p,'w'))
+EOF
 echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q '"block"' && echo "stop hook blocks when stale in a lesson session: ok"
 if echo "$BUILD" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a non-lesson session"; exit 1; else echo "stop hook ignores a non-lesson session: ok"; fi
 if echo "{\"stop_hook_active\":true,\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block on second stop"; exit 1; else echo "stop hook passes on second stop: ok"; fi

@@ -22,8 +22,13 @@ def main() -> None:
     if payload.get("stop_hook_active"):
         return
     try:
-        if not L.lesson_session(payload.get("transcript_path"), payload.get("session_id", "")):
+        lesson = L.lesson_session(payload.get("transcript_path"), payload.get("session_id", ""))
+        if not lesson:
             return  # only lesson/review sessions are held to the checkpoint rule
+        limit = float(L.config().get("checkpointMinutes", 12))
+        began = L.parse_ts(lesson.get("found"))
+        if began and (L.now() - began).total_seconds() / 60 < limit:
+            return  # a lesson that just (re)started is not overdue, however old the state is
         state = L.load_state()
         slug = state.get("active_topic")
         if not slug or slug not in state["topics"]:
@@ -35,7 +40,6 @@ def main() -> None:
         if updated is None:
             return
         minutes = (L.now() - updated).total_seconds() / 60
-        limit = float(L.config().get("checkpointMinutes", 12))
         if minutes < limit:
             return
         reason = (
