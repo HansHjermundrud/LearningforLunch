@@ -294,6 +294,10 @@ def cmd_start(args, state):
         return
     if slug in state["topics"]:
         slug = f"{slug}-{L.today()}"
+    previous = state.get("active_topic")
+    if previous and previous in state["topics"] and state["topics"][previous]["status"] in ("probing", "planning", "teaching"):
+        state["topics"][previous]["status"] = "paused"
+        _touch(state["topics"][previous], "pause", f"parked when '{slug}' started; resume with: python3 scripts/state.py resume {previous}")
     note = _new_note(args.title, slug)
     topic = {
         "title": args.title,
