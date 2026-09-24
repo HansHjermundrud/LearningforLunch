@@ -1,0 +1,16 @@
+# dependencies
+tools/node_modules/
+
+# per-machine
+.claude/settings.local.json
+state/.cursors/
+state/.log/
+.viz-scratch/
+
+# python
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db

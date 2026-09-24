@@ -1,0 +1,10 @@
+{
+  "_comment": "Paths are relative to the repo root unless absolute. Point notesDir, vizDir and reviewsDir at a folder inside your Obsidian vault, e.g. /mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning. Keep stateDir and exercisesDir inside the repo.",
+  "notesDir": "notes",
+  "vizDir": "notes/viz",
+  "reviewsDir": "notes/reviews",
+  "exercisesDir": "exercises",
+  "stateDir": "state",
+  "timezone": "Europe/Oslo",
+  "checkpointMinutes": 12
+}

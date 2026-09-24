@@ -1,0 +1,9 @@
+{
+  "name": "learning-tools",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Renderer dependencies for the learning system (mermaid-cli). Chrome is taken from the system.",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.2"
+  }
+}
