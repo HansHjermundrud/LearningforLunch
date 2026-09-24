@@ -32,3 +32,6 @@ place to describe how you learn best. Keep it short.
 ## Standing notes from past lessons
 
 (The teacher may append one-line observations here, dated, e.g. "2026-09-24: confuses 'axiom' with 'definition'.")
+- 2026-09-24: C pointers: tends to read `r = q` as "r points to q" and blurs pointer vs pointee. Spell out address vs value when pointers appear.
+- 2026-09-24: Wants concrete code shown, not a verbal description of a code change.
+- 2026-09-24: Multi-question AskUserQuestion calls led to accidental submits twice. Ask one gradable MC per call.

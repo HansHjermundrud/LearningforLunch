@@ -1,0 +1,298 @@
+{
+  "version": 1,
+  "active_topic": "parallel-programming-with-openmp",
+  "log_target": "/mnt/c/Users/hansh/OneDrive/Master/Learning/2026-09-24 Parallel programming with OpenMP.md",
+  "topics": {
+    "parallel-programming-with-openmp": {
+      "title": "Parallel programming with OpenMP",
+      "started": "2026-09-24",
+      "updated": "2026-09-24T14:44:02+02:00",
+      "finished": null,
+      "status": "teaching",
+      "goal": "Exam-grade understanding: look at C code and decide whether and how to parallelize it with OpenMP, and explain the benefits and limitations. Scope: core + tasks + extras (SIMD, nested parallelism, memory model/flush). Env: gcc 13.3, 8 hw threads.",
+      "note": "/mnt/c/Users/hansh/OneDrive/Master/Learning/2026-09-24 Parallel programming with OpenMP.md",
+      "edge": [
+        "concurrency fundamentals: floor = shared address space, race via load/add/store interleave, false sharing = perf not correctness, Amdahl 1/s, default-shared scoping of outer vars; ceiling = none found here (solid)",
+        "OpenMP construct semantics: floor = parallel runs block once per thread, unordered; ceiling = does not know static vs dynamic schedule, reduction identity init, which constructs have implicit barriers (master), believes tasks spawn a new thread each (thread pool/team model missing)"
+      ],
+      "plan": {
+        "approved": true,
+        "mermaid": "graph TD\n  n1[Threads share one address space] --> n6\n  n2[Data race = undefined behaviour] --> n4\n  n3[Fork-join: one team, pragmas divide work] --> n5\n  n4[Parallelizable iff iterations independent] --> n5\n  n5[omp for + implicit barrier] --> n6\n  n2 --> n7\n  n3 --> n7\n  n6[Data scoping] --> n8\n  n7[Synchronization] --> n8\n  n4 --> n8\n  n8[Reductions] --> n15\n  n5 --> n9[Scheduling & load balance]\n  n9 --> n10[Performance model: Amdahl, overhead, false sharing, bandwidth]\n  n7 --> n10\n  n7 --> n12[Memory model & flush]\n  n3 --> n11[Tasks]\n  n6 --> n11\n  n7 --> n11\n  n4 --> n13[SIMD]\n  n10 --> n14[Nested parallelism]\n  n10 --> n15\n  n11 --> n15\n  n12 --> n15\n  n13 --> n15\n  n14 --> n15[GOAL: read code, decide if and how to parallelize]",
+        "nodes": [
+          {
+            "id": "n1",
+            "label": "All threads in a team share one address space; only variables on a thread's own stack are its own",
+            "depends": [],
+            "why": "unconditional truth; already held (probe)",
+            "status": "done",
+            "check": "short",
+            "summary": "declaration location -> instance count landed on 2nd try; C gap: reads r=q as 'r points to q' (confuses copying a pointer's value with &q); revisit explicitly in n6 (private pointer, shared pointee)",
+            "done_at": "2026-09-24T13:09:50+02:00"
+          },
+          {
+            "id": "n2",
+            "label": "Data race (same location, >=1 write, no ordering) is undefined behaviour; correct = race-free",
+            "depends": [],
+            "why": "the correctness criterion everything is checked against; learner holds 'wrong result', not yet 'UB'",
+            "status": "done",
+            "check": "short",
+            "summary": "after correction: race -> UB independent of optimization level; correctness = race-free source (re-check 4/5)",
+            "done_at": "2026-09-24T13:26:23+02:00"
+          },
+          {
+            "id": "n3",
+            "label": "Fork-join: parallel creates one team; every other construct only divides work among that team",
+            "depends": [],
+            "why": "root that fixes the 'task = new thread' misconception",
+            "status": "done",
+            "check": "short",
+            "summary": "fork-join landed: tasks run on existing team (5/5); after demo, parallel replicates vs omp for divides (re-check 5/5)",
+            "done_at": "2026-09-24T13:38:50+02:00"
+          },
+          {
+            "id": "n4",
+            "label": "A loop is parallelizable iff its iterations are independent (no loop-carried dependence)",
+            "depends": [
+              "n2"
+            ],
+            "why": "derived: concurrent iterations in any order + race rule",
+            "status": "done",
+            "check": "mcq",
+            "summary": "derivation 3/5 (rule lacked 'different iterations'); after precise rule, classified 3 loops correctly (a[i]+=1 safe, a[i+1] anti-dep, shared scalar write) 5/5 each",
+            "done_at": "2026-09-24T14:10:52+02:00"
+          },
+          {
+            "id": "n5",
+            "label": "omp for / parallel for divides iterations; implicit barrier at end; nowait",
+            "depends": [
+              "n3",
+              "n4"
+            ],
+            "why": "",
+            "status": "done",
+            "check": "short",
+            "summary": "derived implicit barrier between dependent loops (4/5); nowait check 5/5; static same-assignment rule for nowait introduced, revisit in n9",
+            "done_at": "2026-09-24T14:42:47+02:00"
+          },
+          {
+            "id": "n6",
+            "label": "Data scoping: shared, private, firstprivate, lastprivate, default rules, default(none)",
+            "depends": [
+              "n1",
+              "n2",
+              "n5"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n7",
+            "label": "Synchronization: barrier, critical, atomic, single vs master/masked (no barrier)",
+            "depends": [
+              "n2",
+              "n3"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n8",
+            "label": "Reductions: private copy at identity, combine at end; why only associative ops",
+            "depends": [
+              "n4",
+              "n6",
+              "n7"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n9",
+            "label": "Scheduling: static, dynamic, guided, chunk size; load imbalance",
+            "depends": [
+              "n5"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n10",
+            "label": "Performance model: Amdahl, fork/join and sync overhead, false sharing, memory bandwidth",
+            "depends": [
+              "n7",
+              "n9"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n11",
+            "label": "Tasks: work units queued for the team; task, taskwait, taskgroup, task data scoping",
+            "depends": [
+              "n3",
+              "n6",
+              "n7"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n12",
+            "label": "Memory model: why threads can see stale values; flush and implied flushes",
+            "depends": [
+              "n2",
+              "n7"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n13",
+            "label": "SIMD: vector parallelism inside one thread; omp simd, parallel for simd",
+            "depends": [
+              "n4"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n14",
+            "label": "Nested parallelism and oversubscription",
+            "depends": [
+              "n10"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          },
+          {
+            "id": "n15",
+            "label": "GOAL: read code and decide if and how to parallelize, with benefits and limitations",
+            "depends": [
+              "n8",
+              "n10",
+              "n11",
+              "n12",
+              "n13",
+              "n14"
+            ],
+            "why": "",
+            "status": "pending",
+            "check": "",
+            "summary": ""
+          }
+        ]
+      },
+      "next": "Start n6 (data scoping) fresh: motivate from the 'last' loop (n4) and the probe's shared tmp; revisit private pointer / shared pointee explicitly; end with first coding task. Run due reviews first if the learner wants.",
+      "log": [
+        {
+          "ts": "2026-09-24T12:21:05+02:00",
+          "event": "start",
+          "text": "topic created, note /mnt/c/Users/hansh/OneDrive/Master/Learning/2026-09-24 Parallel programming with OpenMP.md"
+        },
+        {
+          "ts": "2026-09-24T12:30:17+02:00",
+          "event": "edge",
+          "text": "concurrency fundamentals: floor = shared address space, race via load/add/store interleave, false sharing = perf not correctness, Amdahl 1/s, default-shared scoping of outer vars; ceiling = none found here (solid)"
+        },
+        {
+          "ts": "2026-09-24T12:30:17+02:00",
+          "event": "edge",
+          "text": "OpenMP construct semantics: floor = parallel runs block once per thread, unordered; ceiling = does not know static vs dynamic schedule, reduction identity init, which constructs have implicit barriers (master), believes tasks spawn a new thread each (thread pool/team model missing)"
+        },
+        {
+          "ts": "2026-09-24T12:32:59+02:00",
+          "event": "goal",
+          "text": "Exam-grade understanding: look at C code and decide whether and how to parallelize it with OpenMP, and explain the benefits and limitations. Scope: core + tasks + extras (SIMD, nested parallelism, memory model/flush). Env: gcc 13.3, 8 hw threads."
+        },
+        {
+          "ts": "2026-09-24T12:32:59+02:00",
+          "event": "plan-set",
+          "text": "15 nodes"
+        },
+        {
+          "ts": "2026-09-24T12:50:24+02:00",
+          "event": "plan-approve",
+          "text": "learner approved the plan"
+        },
+        {
+          "ts": "2026-09-24T13:00:47+02:00",
+          "event": "checkpoint",
+          "text": "n1 not landed yet: learner misses that a declaration inside the region makes one instance per thread; also blurred pointer value vs pointee. Re-teaching with instance-counting check."
+        },
+        {
+          "ts": "2026-09-24T13:09:50+02:00",
+          "event": "node-done",
+          "text": "n1: declaration location -> instance count landed on 2nd try; C gap: reads r=q as 'r points to q' (confuses copying a pointer's value with &q); revisit explicitly in n6 (private pointer, shared pointee)"
+        },
+        {
+          "ts": "2026-09-24T13:22:07+02:00",
+          "event": "checkpoint",
+          "text": "n2 check graded 2: blames -O2 rather than race->UB. Re-checking with 'is the -O0 build correct?'"
+        },
+        {
+          "ts": "2026-09-24T13:26:23+02:00",
+          "event": "node-done",
+          "text": "n2: after correction: race -> UB independent of optimization level; correctness = race-free source (re-check 4/5)"
+        },
+        {
+          "ts": "2026-09-24T13:35:22+02:00",
+          "event": "checkpoint",
+          "text": "n3: tasks-run-on-team fixed (5/5); but thinks omp for gives each thread the full loop (answered 32). Re-checking X/Y count."
+        },
+        {
+          "ts": "2026-09-24T13:38:50+02:00",
+          "event": "node-done",
+          "text": "n3: fork-join landed: tasks run on existing team (5/5); after demo, parallel replicates vs omp for divides (re-check 5/5)"
+        },
+        {
+          "ts": "2026-09-24T14:08:43+02:00",
+          "event": "checkpoint",
+          "text": "n4: derivation answered (3/5: verdicts right, rule lacked 'different iterations'); precise rule given. 3-loop MC check (cards c2kn41, ccakmt, c38zyu) not yet answered: learner paused to clarify"
+        },
+        {
+          "ts": "2026-09-24T14:08:43+02:00",
+          "event": "next",
+          "text": "n4: resolve learner's clarification, then ask the 3 loop-classification MCs (a[i]=a[i]+1 safe; a[i]=a[i+1]+1 unsafe; shared 'last' unsafe) one at a time"
+        },
+        {
+          "ts": "2026-09-24T14:10:52+02:00",
+          "event": "node-done",
+          "text": "n4: derivation 3/5 (rule lacked 'different iterations'); after precise rule, classified 3 loops correctly (a[i]+=1 safe, a[i+1] anti-dep, shared scalar write) 5/5 each"
+        },
+        {
+          "ts": "2026-09-24T14:42:47+02:00",
+          "event": "node-done",
+          "text": "n5: derived implicit barrier between dependent loops (4/5); nowait check 5/5; static same-assignment rule for nowait introduced, revisit in n9"
+        },
+        {
+          "ts": "2026-09-24T14:44:02+02:00",
+          "event": "checkpoint",
+          "text": "Session 1 ended 2026-09-24 14:45 at learner's request. Done n1-n5. Weak spots: C pointer value vs pointee (r=q read as 'points to q'); first instinct that omp for replicates the loop (fixed). Prefers one MC question per call."
+        },
+        {
+          "ts": "2026-09-24T14:44:02+02:00",
+          "event": "next",
+          "text": "Start n6 (data scoping) fresh: motivate from the 'last' loop (n4) and the probe's shared tmp; revisit private pointer / shared pointee explicitly; end with first coding task. Run due reviews first if the learner wants."
+        }
+      ]
+    }
+  }
+}
