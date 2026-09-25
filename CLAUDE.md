@@ -21,6 +21,7 @@ amosblomqvist/learn. Read this file fully; it is short and every rule matters.
 | `notes/` (or the vault folder set in `learn.config.json`) | Lesson notes, reviews and SVG diagrams the learner reads in Obsidian. |
 | `exercises/` | Coding tasks. |
 | `LEARNER.md` | The learner's profile and preferences. Read it before teaching. |
+| `reference/<topic>/` | Source material converted to Markdown (not in git). Read `index.md` first, then `sections.json` for a heading's line number, then read only that slice. |
 
 Paths for notes, diagrams and reviews come from `learn.config.json`. Never hard-code them.
 
