@@ -424,11 +424,34 @@ def cmd_grade(args):
         outcome = apply_grade(card, int(args.q), L.today(), kind=args.kind, independent=not args.assisted,
                               required_met=not args.missing_required, note=args.note or "", variant=args.variant or "",
                               op=args.op)
-        card.pop("needs_replacement_check", None) if args.kind in ("initial", "review", "exit") else None
+        if args.kind in ("initial", "review", "exit"):
+            card.pop("needs_replacement_check", None)
+        flagged = _update_retention(st.state, card, outcome["q"], args.kind)
         st.commit(op_id=args.op)
+        if flagged:
+            print(flagged)
         cap = f" (capped from {args.q}: {outcome['capped']})" if outcome["capped"] else ""
         print(f"{card['id']} graded {outcome['q']}{cap} [{args.kind}]: {outcome['reason']}; next due {outcome['due']} "
               f"(interval {outcome['interval']}d, ease {outcome['ease']})")
+
+
+def _update_retention(state: dict, card: dict, q: int, kind: str) -> str:
+    """A review result is retention evidence for the card's node: demonstrated or needs_review.
+    A failure flags the node (and is visible to next-node) without touching coverage or readiness
+    of anything downstream."""
+    if kind != "review":
+        return ""
+    topic = state.get("topics", {}).get(card.get("topic") or "")
+    if not topic:
+        return ""
+    for node in topic.get("plan", {}).get("nodes", []):
+        if node["id"] == card.get("node"):
+            node["retention"] = "demonstrated" if q >= 3 else "needs_review"
+            if q < 3:
+                node["retention_note"] = f"review of card {card['id']} failed on {L.today()}"
+                return f"{node['id']} retention -> needs_review (downstream nodes untouched)"
+            return ""
+    return ""
 
 
 def cmd_stats(args):

@@ -562,6 +562,18 @@ class TestSrsRules(Base):
         data = json.loads(self.srs("due", "--json", "--all", now="2026-09-30T09:00:00+02:00").stdout)
         self.assertEqual(len(data["selected"]), 6)
 
+    def test_srs_grade_review_flags_node_retention(self):
+        self.start_lesson()
+        self.state("ask", "n1")
+        self.record({"result": "pass", "quality": 5})
+        cid = self.deck_json()["cards"][0]["id"]
+        out = self.srs("grade", cid, "1", "--kind", "review", now="2026-09-27T10:00:00+02:00").stdout
+        self.assertIn("n1 retention -> needs_review", out)
+        n = self.node("n1")
+        self.assertEqual((n["coverage"], n["readiness"], n["retention"]), ("covered", "ready", "needs_review"))
+        self.srs("grade", cid, "5", "--kind", "review", now="2026-09-28T10:00:00+02:00")
+        self.assertEqual(self.node("n1")["retention"], "demonstrated")
+
     def test_review_grade_updates_node_retention_not_readiness(self):
         self.start_lesson()
         self.state("ask", "n1")
