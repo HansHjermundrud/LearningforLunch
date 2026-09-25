@@ -761,6 +761,29 @@ class TestSelftestIsolation(Base):
 
 # --- hooks and snapshot ------------------------------------------------------------------------------
 
+class TestLessonDetection(Base):
+    def entry(self, command):
+        return {"type": "assistant", "isSidechain": False, "message": {"role": "assistant", "content": [
+            {"type": "tool_use", "id": "t", "name": "Bash", "input": {"command": command}}]}}
+
+    def detect(self, command):
+        res = self.py(f"""
+            import learnlib as L
+            print(L._entry_marks_lesson({self.entry(command)!r}))
+        """)
+        return res.stdout.strip() == "True"
+
+    def test_real_invocations_mark_a_lesson(self):
+        self.assertTrue(self.detect('python3 scripts/state.py resume parallel-programming-with-openmp'))
+        self.assertTrue(self.detect('cd /x && python3 scripts/state.py start "OpenMP" --goal "exam"'))
+        self.assertTrue(self.detect("python3 scripts/state.py record <<'EOF'\n{\"result\": \"pass\"}\nEOF"))
+
+    def test_text_that_mentions_commands_does_not(self):
+        self.assertFalse(self.detect("cat > .claude/skills/teach/SKILL.md <<'EOF'\nRun python3 scripts/state.py ask n7\nthen python3 scripts/state.py record\nEOF"))
+        self.assertFalse(self.detect('git commit -m "teach loop: python3 scripts/state.py start, ask, record"'))
+        self.assertFalse(self.detect("echo 'python3 scripts/state.py resume x'"))
+
+
 class TestHooks(Base):
     def test_session_start_is_compact_and_shows_pending(self):
         self.start_lesson()

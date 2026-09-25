@@ -893,6 +893,28 @@ def lesson_flag_path(session_id: str) -> pathlib.Path:
     return dir_path("stateDir") / ".cursors" / f"{session_id}.lesson"
 
 
+_HEREDOC = re.compile(r"<<-?\s*['\"]?([A-Za-z_][A-Za-z0-9_]*)['\"]?")
+_QUOTED = re.compile(r"'[^']*'|\"(?:[^\"\\]|\\.)*\"")
+
+
+def _invoked_text(command: str) -> str:
+    """The parts of a shell command that are actually executed: heredoc bodies and
+    quoted strings removed. Writing a file or a commit message that merely mentions
+    `state.py ask` must not turn a build session into a lesson."""
+    out: list[str] = []
+    delim = None
+    for line in command.splitlines():
+        if delim is not None:
+            if line.strip() == delim:
+                delim = None
+            continue
+        m = _HEREDOC.search(line)
+        if m:
+            delim = m.group(1)
+        out.append(_QUOTED.sub("''", line))
+    return "\n".join(out)
+
+
 def _entry_marks_lesson(entry: dict) -> bool:
     if entry.get("isSidechain"):
         return False
@@ -914,7 +936,7 @@ def _entry_marks_lesson(entry: dict) -> bool:
             inp = block.get("input") or {}
             if name == "Skill" and str(inp.get("skill", "")).split(":")[-1] in LESSON_SKILLS:
                 return True
-            if name == "Bash" and _STATE_CMD.search(str(inp.get("command", ""))):
+            if name == "Bash" and _STATE_CMD.search(_invoked_text(str(inp.get("command", "")))):
                 return True
     return False
 
