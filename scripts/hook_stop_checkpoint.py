@@ -3,11 +3,13 @@
 
 If a topic is being probed, planned or taught and the state file has not
 been updated for longer than checkpointMinutes (learn.config.json), the hook
-blocks the stop once and asks the model to record a checkpoint first. The
-second stop passes (stop_hook_active), so this can never loop.
+blocks the stop once and asks the model to record where things stand. The
+second stop passes (stop_hook_active), so this can never loop. In the normal
+teaching loop `ask` and `record` update the state on every answer turn, so
+this only fires during long stretches without a question.
 
 A review session (log target inside reviewsDir) is exempt: srs.py grade
-saves each card as it goes, so a lesson checkpoint would add nothing.
+saves each card as it goes. A corrupt state file is reported, not "fixed".
 """
 from __future__ import annotations
 
@@ -18,7 +20,6 @@ import learnlib as L
 
 
 def in_review(state: dict) -> bool:
-    """A review mirrors into reviewsDir; a lesson mirrors into its topic note."""
     target = state.get("log_target")
     if not target:
         return False
@@ -39,14 +40,19 @@ def main() -> None:
     try:
         lesson = L.lesson_session(payload.get("transcript_path"), payload.get("session_id", ""))
         if not lesson:
-            return  # only lesson/review sessions are held to the checkpoint rule
+            return
         limit = float(L.config().get("checkpointMinutes", 12))
         began = L.parse_ts(lesson.get("found"))
         if began and (L.now() - began).total_seconds() / 60 < limit:
-            return  # a lesson that just (re)started is not overdue, however old the state is
-        state = L.load_state()
+            return
+        try:
+            state = L.load_state()
+        except L.LearnError as exc:
+            L.hook_log(f"stop_checkpoint: state unreadable: {exc}")
+            print(json.dumps({"systemMessage": f"Learning state could not be read ({exc}). Nothing was saved."}))
+            return
         if in_review(state):
-            return  # every review grade is already saved to the deck; nothing to checkpoint
+            return
         slug = state.get("active_topic")
         if not slug or slug not in state["topics"]:
             return
@@ -61,10 +67,10 @@ def main() -> None:
             return
         reason = (
             f"Checkpoint overdue: {int(minutes)} min since the last state update for topic '{slug}'. "
-            "Before ending the turn, record where the lesson stands: "
-            "`python3 scripts/state.py checkpoint \"<one line: what was just taught or asked, and the learner's result>\"`, "
-            "plus `node-done`, `node-shaky` or `next` if they apply. Then end the turn. "
-            "Do not repeat lesson content to the learner."
+            "Before ending the turn, record where the lesson stands with ONE command: "
+            "`python3 scripts/state.py checkpoint \"<what was just taught or asked, and the result>\"` "
+            "(or `record` if an answer is waiting to be graded, or `ask` if you just posed a question without it). "
+            "Then end the turn. Do not repeat lesson content to the learner."
         )
         print(json.dumps({"decision": "block", "reason": reason}))
         L.hook_log(f"stop_checkpoint: blocked once ({int(minutes)} min) for {slug}")

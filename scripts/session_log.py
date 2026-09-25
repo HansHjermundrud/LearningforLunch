@@ -76,7 +76,7 @@ def format_question(block: dict) -> str:
 
 
 def process(transcript: pathlib.Path, cursor_path: pathlib.Path, target: pathlib.Path, initial_offset: int = 0) -> int:
-    cursor = L.read_json(cursor_path, {"offset": initial_offset, "pending": {}})
+    cursor = L.read_json_lenient(cursor_path, {"offset": initial_offset, "pending": {}})
     offset = int(cursor.get("offset", 0))
     pending = dict(cursor.get("pending", {}))
     size = transcript.stat().st_size
@@ -143,7 +143,11 @@ def main() -> None:
     except Exception:  # noqa: BLE001
         payload = {}
     try:
-        state = L.load_state()
+        try:
+            state = L.load_state()
+        except L.LearnError as exc:
+            L.hook_log(f"session_log: state unreadable, not mirroring: {exc}")
+            return
         target = state.get("log_target")
         if not target:
             return

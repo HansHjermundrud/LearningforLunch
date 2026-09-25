@@ -7,10 +7,7 @@ argument-hint: [optional note]
 # Checkpoint
 
 1. If no topic is active, say so and stop.
-2. Record, in this order, whatever applies since the last checkpoint:
-   - `python3 scripts/state.py node-done <id> "<summary>" --check <type>` or `node-shaky <id> "<why>"` for any node whose check completed.
-   - `python3 scripts/state.py edge "..."` for any new finding about the learner's level.
-   - `python3 scripts/state.py checkpoint "<one line: what was just taught or asked and the result>"`.
-   - `python3 scripts/state.py next "<the exact next step, specific enough to resume cold>"`.
-3. If the learner is stopping for now, also run `python3 scripts/state.py pause` and tell them to resume with `/teach continue` or `python3 scripts/state.py resume <slug>` next time.
-4. Confirm in one line. Do not summarise the lesson back to the learner.
+2. If a question is waiting: `python3 scripts/state.py pending`. An answer that was given but not graded is graded now with `record`; a question the learner has not answered stays pending (that is already saved).
+3. Otherwise record what happened since the last save with one command: `python3 scripts/state.py checkpoint "<what was just taught or asked and the result>"`, plus `next "<the exact next step, specific enough to resume cold>"` only if NEXT is wrong. New findings about the learner: `edge "..."`.
+4. If the learner is stopping for now: `python3 scripts/state.py pause`, and tell them `/teach continue` resumes.
+5. Confirm in one short line. Do not summarise the lesson back to the learner.

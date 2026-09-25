@@ -2,10 +2,11 @@
 """SessionStart hook: inject the external memory into the fresh context.
 
 Runs on startup, resume, /clear and after every compaction. Prints a JSON
-object whose additionalContext tells the model today's date, the active
-topic, the plan progress, the next step and how many review cards are due.
-This is what stops the system from "losing itself": the chat context can be
-thrown away at any time and rebuilt from here plus state/progress.md.
+object whose additionalContext holds a compact snapshot: today's date, the
+active topic, plan progress, the current chunk, the PENDING interaction (if a
+question is waiting or an answer is recorded but not graded), NEXT, and how
+many review cards are due. Detail is available on demand
+(python3 scripts/state.py show --full / pending / history).
 """
 from __future__ import annotations
 
@@ -24,14 +25,16 @@ def deck_line() -> str:
         ).stdout
         stats = json.loads(out)
     except Exception:  # noqa: BLE001
-        return "Reviews: deck unavailable."
+        return "Reviews: deck unavailable (see state/.log/hooks.log)."
     if stats["total"] == 0:
         return "Reviews: deck is empty."
     by_topic = ", ".join(f"{k} {v}" for k, v in sorted(stats["due_by_topic"].items()))
     line = f"Reviews: {stats['due_today']} card(s) due today" + (f" ({by_topic})" if by_topic else "")
     line += f"; {stats['due_next_7_days']} in the next 7 days; {stats['total']} total."
     if stats["due_today"]:
-        line += " Offer /review before or after the lesson."
+        line += f" A default session covers {stats['session_cards']} (~{stats['session_minutes']:.0f} min). Offer /review before or after the lesson."
+    if stats.get("needs_replacement_check"):
+        line += f" {stats['needs_replacement_check']} card(s) had their key corrected and need a fresh check."
     return line
 
 
@@ -47,14 +50,18 @@ def main() -> None:
 
         state = L.load_state()
         summary = S.summary_text(state)
+    except L.LearnError as exc:
+        L.hook_log(f"session_start: {exc}")
+        summary = f"STATE PROBLEM: {exc}\nRead-only until fixed; mutating commands are blocked."
     except Exception as exc:  # noqa: BLE001
         L.hook_log(f"session_start error: {exc!r}")
         summary = "State unavailable (see state/.log/hooks.log)."
     header = f"[learning system · {source} · now {L.now().strftime('%A %Y-%m-%d %H:%M')} {L.config().get('timezone') or 'local time'}]"
     tail = (
-        "Rules: use these dates for anything dated. If a topic is active and the learner wants to continue, "
-        "resume at NEXT without re-teaching finished nodes; state/progress.md has the detail. "
-        "Checkpoint with scripts/state.py after every node and phase change."
+        "Rules: use these dates for anything dated. If a PENDING interaction is shown, recover it first "
+        "(python3 scripts/state.py pending): awaiting -> wait for or re-show the same question; recorded -> grade it with record. "
+        "If a topic is active and the learner wants to continue, resume at NEXT without re-teaching covered nodes. "
+        "A direct question gets a direct answer; the lesson workflow is for /teach."
     )
     if source == "compact":
         tail = "Context was just compacted. " + tail

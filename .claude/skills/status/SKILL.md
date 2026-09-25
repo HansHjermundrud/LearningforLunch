@@ -5,13 +5,13 @@ description: Show where the learner stands - active topic, plan progress, next s
 
 # Status
 
-Run both and present the result compactly, with dates:
+Run and present compactly, with dates:
 
 ```
-python3 scripts/state.py show
+python3 scripts/state.py show --full
 python3 scripts/state.py topics
 python3 scripts/srs.py stats
 python3 scripts/srs.py forecast --days 7
 ```
 
-Then say in one or two sentences what you recommend doing now: continue the active topic at NEXT, run `/review` if cards are due, or start something new. Do not start teaching from this skill; wait for the learner's choice.
+Translate the node marks for the learner (✓ solid, ◐ provisional, ~ needs repair, ? covered before evidence was recorded, · not yet). Then say in one or two sentences what you recommend now: continue at NEXT, `/review` if cards are due, or something new. Do not start teaching from this skill; wait for the learner's choice.

@@ -14,3 +14,10 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# bounded byte-for-byte backups made before migrations/restores (git history holds the committed versions)
+state/backups/
+state/.journal.json
+state/.state.lock/
+exercises/**/.attempts/
+exercises/**/.validate*
