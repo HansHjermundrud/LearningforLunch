@@ -138,7 +138,7 @@
       "variants": [
         {
           "id": "v1",
-          "question": "Answer (a), (b) and (c) for this region.",
+          "question": "Answer (a), (b) and (c) for this region (total is shared, mine is private).\n(a) Is there a data race on total? Explain why or why not, and whether the printf is guaranteed to see all four contributions.\n(b) Which lighter construct could replace critical here, and why is it enough?\n(c) Now the body becomes { total += mine; log[count++] = mine; } with log and count shared. Is your construct from (b) still enough? Explain.",
           "code": "int total = 0;\n#pragma omp parallel num_threads(4)\n{\n    int mine = work(omp_get_thread_num());\n    #pragma omp critical\n    total += mine;\n}\nprintf(\"%d\\n\", total);",
           "answer": "(a) No data race on total: critical makes the update mutually exclusive, so the accesses are ordered and never overlap; the printf runs after the region-end barrier. (b) #pragma omp atomic on total += mine: one indivisible memory update, and it suffices because that is the only shared update. (c) If the body becomes { total += mine; log[count++] = mine; }, atomic no longer suffices: count++ and the write to log[count] are two coupled operations on two locations, and atomic covers a single update. Mutual exclusion around both (critical) is needed.",
           "required": [
@@ -159,7 +159,7 @@
         },
         {
           "id": "v2",
-          "question": "Answer (a), (b) and (c) for this histogram.",
+          "question": "Answer (a), (b) and (c) for this histogram (hist is shared).\n(a) Is there a data race on hist? Explain why or why not.\n(b) Which lighter construct could replace critical here, and why is it enough?\n(c) Now the body becomes { hist[b]++; if (hist[b] == 1) nonempty++; } with nonempty shared. Is your construct from (b) still enough? Explain.",
           "code": "int hist[64] = {0};\n#pragma omp parallel for\nfor (int i = 0; i < n; i++) {\n    int b = bin_of(x[i]);\n    #pragma omp critical\n    hist[b]++;\n}",
           "answer": "(a) There is no race: critical serializes every increment, whatever bin. (b) #pragma omp atomic on hist[b]++ suffices: each increment is one indivisible update of one location, and different bins can proceed concurrently. (c) If the body becomes { hist[b]++; if (hist[b] == 1) nonempty++; } atomic no longer suffices: the increment, the read-back and the second counter are coupled operations on two locations, so critical around all of them is needed.",
           "required": [
@@ -324,5 +324,5 @@
   ],
   "id": "n7",
   "version": 1,
-  "saved": "2026-09-25T15:23:24+02:00"
+  "saved": "2026-09-25T20:49:08+02:00"
 }
