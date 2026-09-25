@@ -1,4 +1,8 @@
-# Learning
+# Learning for Lunch
+
+Developed, configured and tested by:
+Main author: Hans Hjermundrud
+Co-author: Sebastian Sjøen-Tollaksvik
 
 **A personal AI tutor for Claude Code, with structured lessons, rubric-based assessment, and spaced repetition.**
 
