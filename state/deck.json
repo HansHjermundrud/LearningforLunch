@@ -17,16 +17,21 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
-      "ease": 1.96,
+      "ease": 1.64,
       "reps": 0,
-      "lapses": 1,
+      "lapses": 2,
       "history": [
         {
           "date": "2026-09-24",
           "q": 1,
           "note": "chose 'each prints own id'"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 2,
+          "note": ""
         }
       ],
       "suspended": false,
@@ -46,16 +51,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
       "ease": 1.96,
-      "reps": 0,
+      "reps": 1,
       "lapses": 1,
       "history": [
         {
           "date": "2026-09-24",
           "q": 1,
           "note": "said moving p inside 'wouldn't matter'; missed per-thread p and UB; said p 'has the value 0' (pointer vs pointee)"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 4,
+          "note": ""
         }
       ],
       "suspended": false
@@ -73,16 +83,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
-      "ease": 2.36,
-      "reps": 1,
-      "lapses": 0,
+      "ease": 2.04,
+      "reps": 0,
+      "lapses": 1,
       "history": [
         {
           "date": "2026-09-24",
           "q": 3,
           "note": "counts a,b,q,r right; missed heap int; said r points to q (pointer copy vs address-of)"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 2,
+          "note": ""
         }
       ],
       "suspended": false
@@ -100,16 +115,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
-      "ease": 2.18,
-      "reps": 0,
+      "ease": 2.04,
+      "reps": 1,
       "lapses": 1,
       "history": [
         {
           "date": "2026-09-24",
           "q": 2,
           "note": "guessed compiler assumed done never changes (good) but attributed it to -O2 license; did not name race/UB; thought program exited"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 3,
+          "note": ""
         }
       ],
       "suspended": false
@@ -128,16 +148,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
+      "due": "2026-10-01",
+      "interval": 6,
       "ease": 2.5,
-      "reps": 1,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
           "q": 4,
           "note": "correct: race -> UB regardless of flags; didn't spell out the race conditions or 'worked by luck'"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 4,
+          "note": ""
         }
       ],
       "suspended": false
@@ -158,16 +183,21 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
-      "ease": 1.96,
-      "reps": 0,
+      "ease": 2.06,
+      "reps": 1,
       "lapses": 1,
       "history": [
         {
           "date": "2026-09-24",
           "q": 1,
           "note": "answered 32: thinks omp for runs full loop on each thread"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 5,
+          "note": ""
         }
       ],
       "suspended": false
@@ -188,16 +218,21 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
-      "ease": 2.6,
-      "reps": 1,
-      "lapses": 0,
+      "ease": 2.28,
+      "reps": 0,
+      "lapses": 1,
       "history": [
         {
           "date": "2026-09-24",
           "q": 5,
           "note": ""
+        },
+        {
+          "date": "2026-09-25",
+          "q": 2,
+          "note": "chose 'one new thread per task' (got it right yesterday)"
         }
       ],
       "suspended": false
@@ -216,14 +251,19 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.6,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.7,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
+          "q": 5,
+          "note": ""
+        },
+        {
+          "date": "2026-09-25",
           "q": 5,
           "note": ""
         }
@@ -243,16 +283,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.36,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.22,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
           "q": 3,
           "note": "A reasoning good; B right verdict but didn't locate cross-iteration a[i-1]; rule vague ('same thing', 'where order matters') - misses 'different iterations'"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 3,
+          "note": "verdicts right; B reason 'reads same array it writes' (not cross-iteration); rule 'reads separate from writes' still misses 'different iterations'"
         }
       ],
       "suspended": false
@@ -272,14 +317,19 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.6,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.7,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
+          "q": 5,
+          "note": ""
+        },
+        {
+          "date": "2026-09-25",
           "q": 5,
           "note": ""
         }
@@ -301,14 +351,19 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.6,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.7,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
+          "q": 5,
+          "note": ""
+        },
+        {
+          "date": "2026-09-25",
           "q": 5,
           "note": ""
         }
@@ -330,14 +385,19 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.6,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.7,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
+          "q": 5,
+          "note": ""
+        },
+        {
+          "date": "2026-09-25",
           "q": 5,
           "note": ""
         }
@@ -357,16 +417,21 @@
       "options": [],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
-      "interval": 1,
-      "ease": 2.5,
-      "reps": 1,
+      "due": "2026-10-01",
+      "interval": 6,
+      "ease": 2.36,
+      "reps": 2,
       "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
           "q": 4,
           "note": "derived the barrier correctly; didn't name that a[n-1-i] was written by a different thread"
+        },
+        {
+          "date": "2026-09-25",
+          "q": 3,
+          "note": "barrier right; mechanism vague (didn't say thread reads a[n-1-i] written by another thread); wrote explicit #pragma omp barrier, didn't say omp for already has an implicit one"
         }
       ],
       "suspended": false
@@ -387,15 +452,246 @@
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.28,
+      "reps": 0,
+      "lapses": 1,
+      "history": [
+        {
+          "date": "2026-09-24",
+          "q": 5,
+          "note": ""
+        },
+        {
+          "date": "2026-09-25",
+          "q": 2,
+          "note": "chose 'loop 2 may start before loop 1 finished' as a bug: treats overlap as wrong even without dependence"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "cdxo04",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "short",
+      "question": "double tmp; (declared before) #pragma omp parallel for  for (int i=0;i<n;i++) { tmp = 2*a[i]; b[i] = tmp + 1; }  What goes wrong, and how can you fix it using only the rule for where a variable is declared?",
+      "answer": "tmp is declared outside the region, so it is shared: one instance for the whole team. Every iteration writes tmp and then reads it back. Iterations on different threads touch that same location with writes and no ordering: a data race, so UB. Concretely, thread A writes tmp = 2*a[3], thread B overwrites it with 2*a[7], then A reads B's value, so b[3] gets the wrong result. Fix: declare tmp inside the loop body (double tmp = 2*a[i];). A variable declared inside the region lives on each thread's own stack, so each thread gets its own tmp and nothing is shared.",
+      "key_points": [
+        "tmp declared outside -> shared, one instance|every iteration writes and reads it -> race between threads (UB)|concrete interleaving: another thread overwrites tmp between the write and the read -> wrong b[i]|fix: declare tmp inside the loop body -> one per thread"
+      ],
+      "options": [],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.36,
+      "reps": 1,
+      "lapses": 0,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 3,
+          "note": "fix right (declare inside); diagnosis vague 'depends on iteration order', didn't name shared tmp, race or interleaving"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "cvmhn3",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "short",
+      "question": "int x = 5; #pragma omp parallel num_threads(4) private(x) { x = x + omp_get_thread_num(); printf(\"%d\\n\", x); }  What does each thread print, and what would the private copies need for every thread to print 5 + its id?",
+      "answer": "Garbage (an indeterminate value), not 5 + id. private(x) gives each thread a brand-new x, exactly as if 'int x;' were declared inside the region with no initializer, so each copy starts uninitialised and x + id reads whatever happens to be there. The original 5 is never copied in. For 5 + id, each private copy must be initialised from the original's value when the region starts: that is what firstprivate(x) does.",
+      "key_points": [
+        "private copy = new variable, as if declared inside without initializer|so it is uninitialised: prints garbage, not 5+id|the original's 5 is not copied in|need each copy initialised from the original at entry (firstprivate)"
+      ],
+      "options": [],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 1.96,
+      "reps": 0,
+      "lapses": 1,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 1,
+          "note": "said private copies start at 5 (thinks private copies the original value); said nothing more needed"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "c7ycsh",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "mcq",
+      "question": "int count = 10; #pragma omp parallel num_threads(2) firstprivate(count) { count = count + 1; printf(\"%d\\n\", count); }  What do the two threads print?",
+      "answer": "11 and 11",
+      "key_points": [
+        "Each thread's own count starts at the original's 10, adds 1 to its own copy: 11 each. No sharing, so no race and no 12."
+      ],
+      "options": [
+        "11 and 11",
+        "11 and 12",
+        "Two garbage values",
+        "I don't know"
+      ],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
       "interval": 1,
       "ease": 2.6,
       "reps": 1,
       "lapses": 0,
       "history": [
         {
-          "date": "2026-09-24",
+          "date": "2026-09-25",
           "q": 5,
+          "note": ""
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "ciga1v",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "short",
+      "question": "int last = -1; #pragma omp parallel for private(last)  for (int i=0;i<n;i++) { b[i] = 2*a[i]; last = b[i]; }  printf(\"%d\\n\", last);  (1) Is the race gone? (2) What does the printf show? (3) What would OpenMP have to do at the end of the loop so it prints b[n-1]?",
+      "answer": "(1) Yes: each thread writes only its own last. (2) Not b[n-1]. The copies are separate variables that vanish at the end of the loop and are never written back, and the spec says the original's value after the construct is unspecified: -1 or anything else, you cannot rely on it. (3) Copy out: after the loop, assign the original last the value it had in the sequentially last iteration (i = n-1), whichever thread ran it, not whichever thread finished last in time. That is lastprivate(last).",
+      "key_points": [
+        "race gone: each thread has its own last|original never receives the copies: unspecified value, not b[n-1]|need copy-out at the end|from the sequentially last iteration (i = n-1), not the thread that finishes last in time -> lastprivate"
+      ],
+      "options": [],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.18,
+      "reps": 0,
+      "lapses": 1,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 2,
+          "note": "said race remains ('which thread writes last'); -1 (missed 'unspecified'); guessed lastprivate but not 'sequentially last iteration'"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "cs7s1b",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "mcq",
+      "question": "int x; #pragma omp parallel for num_threads(4) lastprivate(x)  for (int i = 0; i < 8; i++) { x = i * 10; }  printf(\"%d\\n\", x);  What does the printf show?",
+      "answer": "Always 70",
+      "key_points": [
+        "lastprivate copies out the value from the sequentially last iteration (i = 7), whichever thread ran it and whenever it finished: 70."
+      ],
+      "options": [
+        "Always 70",
+        "The value from whichever iteration finished last in time",
+        "0, the private copies are discarded",
+        "I don't know"
+      ],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.6,
+      "reps": 1,
+      "lapses": 0,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 5,
+          "note": ""
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "c2547a",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "short",
+      "question": "double scale = 2.0, tmp; int i, n = 100; double a[100], b[100];  #pragma omp parallel for default(none) ???  for (i = 0; i < n; i++) { tmp = scale * a[i]; b[i] = tmp + 1; }  Replace ??? with the clauses that make this compile and run correctly, and justify each variable (including i).",
+      "answer": "private(tmp): scratch written by every iteration, so it needs one per thread (shared would race; its start value is never read, so private is enough). shared(a, b): a is only read; each iteration writes a different b[i], so no race on one array. shared(n, scale) (or firstprivate): only read, never written, so sharing is safe. i: no clause needed, because the loop variable of an omp for is automatically private, even under default(none). gcc accepts: default(none) shared(a, b, n, scale) private(tmp).",
+      "key_points": [
+        "tmp private (written by every iteration)|a and b shared (b written at distinct indices",
+        "a only read)|n and scale shared or firstprivate (read-only)|i needs no clause: omp for loop variable is predetermined private"
+      ],
+      "options": [],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.36,
+      "reps": 1,
+      "lapses": 0,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 3,
+          "note": "a,b,n shared ok, i ok; tmp lastprivate (works, unneeded); forgot scale -> would not compile; shared() syntax inferred, not taught explicitly"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "c98zwz",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "short",
+      "question": "int *v = calloc(4, sizeof(int));  #pragma omp parallel num_threads(4) firstprivate(v) { v[omp_get_thread_num()] = 1; }  printf(\"%d %d %d %d\\n\", v[0], v[1], v[2], v[3]);  What prints, and does each thread get its own array? Why?",
+      "answer": "1 1 1 1. firstprivate(v) gives each thread its own copy of the POINTER v, initialised with the original's value, which is the heap address from calloc. It does not copy the array. So all four private pointers hold the same address and lead to the one shared heap array: private pointer, shared pointee. Each thread writes a different element (its id), so there is no race, and the barrier at the end of the region means all writes are done before the printf.",
+      "key_points": [
+        "prints 1 1 1 1|firstprivate copies the pointer's value (an address), not the array|all copies point to the one shared heap array (private pointer, shared pointee)|different elements per thread -> no race",
+        "region-end barrier before printf"
+      ],
+      "options": [],
+      "task": "",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 4,
+          "note": "1 1 1 1, private pointer/shared heap array right; didn't mention region-end barrier"
+        }
+      ],
+      "suspended": false
+    },
+    {
+      "id": "cimx09",
+      "topic": "parallel-programming-with-openmp",
+      "node": "n6",
+      "type": "code",
+      "question": "Add default(none)-compatible scoping clauses to a parallel for (b[i]=scale*a[i]+1 via scratch tmp, last=b[i] needed after the loop) and to a parallel region where each thread writes slots[base+tid]",
+      "answer": "Loop: shared(a,b,n,scale) private(tmp) lastprivate(last); i is predetermined private. Region: shared(slots) firstprivate(base) since base is modified per thread and must start at the caller's value. Pointers can be shared (or firstprivate) - the pointee arrays stay shared either way.",
+      "key_points": [],
+      "options": [],
+      "task": "exercises/parallel-programming-with-openmp/scoping-fix",
+      "created": "2026-09-25",
+      "due": "2026-09-26",
+      "interval": 1,
+      "ease": 2.5,
+      "reps": 1,
+      "lapses": 0,
+      "history": [
+        {
+          "date": "2026-09-25",
+          "q": 4,
           "note": ""
         }
       ],

@@ -6,7 +6,7 @@
     "parallel-programming-with-openmp": {
       "title": "Parallel programming with OpenMP",
       "started": "2026-09-24",
-      "updated": "2026-09-24T14:44:02+02:00",
+      "updated": "2026-09-25T14:39:15+02:00",
       "finished": null,
       "status": "teaching",
       "goal": "Exam-grade understanding: look at C code and decide whether and how to parallelize it with OpenMP, and explain the benefits and limitations. Scope: core + tasks + extras (SIMD, nested parallelism, memory model/flush). Env: gcc 13.3, 8 hw threads.",
@@ -83,9 +83,10 @@
               "n5"
             ],
             "why": "",
-            "status": "pending",
-            "check": "",
-            "summary": ""
+            "status": "done",
+            "check": "short",
+            "summary": "private/firstprivate/lastprivate/default(none) built from n1 inside/outside rule; private=uninit (1st try missed, fixed), firstprivate 5, lastprivate 5 after race-vs-nondeterminism correction, default(none) 3 (forgot scale), private pointer/shared pointee 4 (n1 pointer gap closing). Coding task next.",
+            "done_at": "2026-09-25T14:14:14+02:00"
           },
           {
             "id": "n7",
@@ -200,7 +201,7 @@
           }
         ]
       },
-      "next": "Start n6 (data scoping) fresh: motivate from the 'last' loop (n4) and the probe's shared tmp; revisit private pointer / shared pointee explicitly; end with first coding task. Run due reviews first if the learner wants.",
+      "next": "start n7 (synchronization: barrier, critical, atomic, single vs master/masked)",
       "log": [
         {
           "ts": "2026-09-24T12:21:05+02:00",
@@ -291,6 +292,81 @@
           "ts": "2026-09-24T14:44:02+02:00",
           "event": "next",
           "text": "Start n6 (data scoping) fresh: motivate from the 'last' loop (n4) and the probe's shared tmp; revisit private pointer / shared pointee explicitly; end with first coding task. Run due reviews first if the learner wants."
+        },
+        {
+          "ts": "2026-09-25T10:08:40+02:00",
+          "event": "checkpoint",
+          "text": "2026-09-25 review in progress (3/14 done): cu1dsb 2 (thinks stack is inaccessible to other threads), c3kqx8 4, c3eld3 2 (pointer value vs pointee again). Lesson NEXT unchanged: n6 data scoping; stress pointer value vs pointee and one address space."
+        },
+        {
+          "ts": "2026-09-25T11:18:32+02:00",
+          "event": "checkpoint",
+          "text": "2026-09-25 review 4/14 done: ceh7ie 3 (named UB + sync fix, missed naming the race and the hoisted load). Asked c69it1 (is -O0 racy program correct?). Lesson NEXT unchanged: n6."
+        },
+        {
+          "ts": "2026-09-25T11:51:10+02:00",
+          "event": "resume",
+          "text": "resumed"
+        },
+        {
+          "ts": "2026-09-25T11:51:16+02:00",
+          "event": "checkpoint",
+          "text": "Review 2026-09-25 done (14 cards): weak = one address space (cu1dsb 1->2, thinks other threads can't reach a stack var), pointer value vs pointee (c3eld3 2), tasks = threads (c88nn7 2), nowait overlap treated as a bug without a dependence (cppjk8 2). n6 must open with the shared-pointer/stack card as its hook."
+        },
+        {
+          "ts": "2026-09-25T11:55:15+02:00",
+          "event": "checkpoint",
+          "text": "n6 started: asked Socratic shared-tmp question (card cdxo04), awaiting answer. Verified facts for n6 (spec 5.2): private copy uninitialised (as if declared without initializer); original's value after a private region is UNSPECIFIED (not 'unchanged'); firstprivate = original's value at entry; lastprivate = sequentially last iteration's value, unspecified if not assigned there; default(none) exempts omp-for loop var, vars declared inside, threadprivate; const vars need a clause since 4.0."
+        },
+        {
+          "ts": "2026-09-25T12:09:39+02:00",
+          "event": "checkpoint",
+          "text": "n6 in progress: shared-tmp card cdxo04 graded 3 (fix right; blamed iteration order instead of the shared tmp race). Taught private(x) = 'as if declared inside'. Asked cvmhn3 (private(x) with x=5: prints garbage; needs firstprivate) to lead into firstprivate; awaiting answer. Then: firstprivate, lastprivate (the 'last' loop), default rules/default(none), private pointer + shared pointee, coding task."
+        },
+        {
+          "ts": "2026-09-25T12:26:05+02:00",
+          "event": "checkpoint",
+          "text": "n6 in progress: clarified iteration order vs statement interleaving (learner asked; bug is overlap on shared tmp, threads run chunks simultaneously). cvmhn3 graded 1: believed private(x) copies the original value (5,6,7,8). Taught private = new uninitialised var, firstprivate = initialised from original. Asked c7ycsh (firstprivate count=10 -> 11 and 11); awaiting answer. Then: lastprivate ('last' loop), default rules/default(none), private pointer + shared pointee, coding task."
+        },
+        {
+          "ts": "2026-09-25T12:39:14+02:00",
+          "event": "checkpoint",
+          "text": "n6 in progress: c7ycsh (firstprivate) 5. Introduced the 'last' loop fixed with private(last); stated spec fact: original's value after private is unspecified. Asked ciga1v (race gone? printf value? copy-out from sequentially last iteration -> lastprivate); awaiting answer. Then: default rules/default(none), private pointer + shared pointee, coding task."
+        },
+        {
+          "ts": "2026-09-25T12:53:06+02:00",
+          "event": "checkpoint",
+          "text": "n6 in progress: ciga1v graded 2 (thought private(last) still races; said -1 not unspecified; guessed lastprivate name). Taught race vs nondeterminism, lastprivate = sequentially last iteration, in/out clause table. Asked cs7s1b (lastprivate x=i*10 -> always 70); awaiting answer. Then: default rules/default(none), private pointer + shared pointee, coding task."
+        },
+        {
+          "ts": "2026-09-25T13:39:02+02:00",
+          "event": "checkpoint",
+          "text": "n6 in progress: cs7s1b (lastprivate) 5; explained why the original is unspecified after private (implementation may reuse its storage; gcc prints -1). Taught default rules + default(none) (gcc-verified). c2547a graded 3 (forgot scale, tmp lastprivate instead of private, shared() syntax not taught before). Asked c98zwz (firstprivate pointer -> 1 1 1 1, private pointer shared pointee); awaiting answer. After it: node-done n6, then first coding task (code-task skill)."
+        },
+        {
+          "ts": "2026-09-25T14:14:14+02:00",
+          "event": "node-done",
+          "text": "n6: private/firstprivate/lastprivate/default(none) built from n1 inside/outside rule; private=uninit (1st try missed, fixed), firstprivate 5, lastprivate 5 after race-vs-nondeterminism correction, default(none) 3 (forgot scale), private pointer/shared pointee 4 (n1 pointer gap closing). Coding task next."
+        },
+        {
+          "ts": "2026-09-25T14:15:32+02:00",
+          "event": "next",
+          "text": "waiting for coding task exercises/parallel-programming-with-openmp/scoping-fix (n6 scoping clauses); after grading, start n7 (synchronization)"
+        },
+        {
+          "ts": "2026-09-25T14:29:39+02:00",
+          "event": "checkpoint",
+          "text": "n6 done; c98zwz 4. Coding task scoping-fix handed out (reference solution verified: shared(a,b,n,scale) private(tmp) lastprivate(last); shared(slots) firstprivate(base)). Learner sent an incomplete message ('I mean'); asked what they meant. Waiting on that and the task."
+        },
+        {
+          "ts": "2026-09-25T14:39:15+02:00",
+          "event": "checkpoint",
+          "text": "scoping-fix graded 4/5 (PASS; firstprivate used for read-only vars/pointers where shared states intent; pointer-vs-pointee understood). Card cimx09."
+        },
+        {
+          "ts": "2026-09-25T14:39:15+02:00",
+          "event": "next",
+          "text": "start n7 (synchronization: barrier, critical, atomic, single vs master/masked)"
         }
       ]
     }

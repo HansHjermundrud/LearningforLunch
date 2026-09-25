@@ -37,3 +37,4 @@ place to describe how you learn best. Keep it short.
 - 2026-09-24: Multi-question AskUserQuestion calls led to accidental submits twice. Ask one gradable MC per call.
 - 2026-09-25: Believes a thread's stack is off-limits to other threads ("private" = inaccessible). Missed this card twice, with a different wrong answer each time. Stress that there is one address space: privacy is about names, and a pointer reaches anything.
 - 2026-09-25: Code in AskUserQuestion renders unreadably. Show code as a fenced block in chat with lettered options instead.
+- 2026-09-25: Calls any nondeterminism a race (said private(last) still races because 'we don't know which thread writes last'). Re-check against the definition: same location, >=1 write, no ordering.
