@@ -1,74 +1,132 @@
-# learning
+# Learning
 
-A personal AI tutor that runs inside Claude Code. A port and extension of
-[amosblomqvist/learn](https://github.com/amosblomqvist/learn) with four additions:
-short-answer questions graded against a committed rubric, a spaced-repetition deck,
-coding tasks, and an external memory that keeps long lessons from losing themselves.
+**A personal AI tutor for Claude Code, with structured lessons, rubric-based assessment, and spaced repetition.**
 
-## How a lesson works
+Learning turns a Claude Code session into a persistent learning workspace. It combines guided instruction, short-answer checks, practical coding exercises, and scheduled reviews, while keeping lesson notes and progress outside the conversation so you can pick up where you left off.
 
-1. `claude` in this folder. A SessionStart hook injects the date, the active topic and due reviews.
-2. `/teach <topic>` starts a lesson. The teacher probes your level with quick multiple-choice
-   questions, pins down your goal, researches the topic, and presents a plan as a dependency graph.
-3. You approve the plan. Each node is taught in a motivate / establish / connect / check loop.
-   Load-bearing nodes and the end of every topic are checked with short answers in your own words.
-   Programming topics get coding tasks under `exercises/`.
-4. Everything you and the teacher write is mirrored into a dated note in your Obsidian vault.
-   Diagrams render there too (Mermaid inline, SVG files in the diagram folder).
-5. Every checked node becomes a review card. `/review` runs the cards that are due (SM-2 scheduling).
-6. `/status` shows where you stand; `/checkpoint` saves the state when you need to stop.
+## Features
 
-## Setup
+- **Personalized lessons** — Assess your starting level, define a learning goal, and follow a plan organized by concept dependencies.
+- **Rubric-based assessment** — Explain concepts in your own words and receive feedback against a committed grading rubric.
+- **Spaced repetition** — Turn checked concepts into review cards scheduled with the SM-2 algorithm.
+- **Coding practice** — Apply programming concepts through exercises stored in `exercises/`.
+- **Persistent learning state** — Preserve lesson progress and checkpoints across sessions and long conversations.
+- **Obsidian notes** — Mirror both sides of the lesson into dated notes, with inline Mermaid diagrams and SVG assets.
+
+## How it works
+
+1. **Start a session.** Run `claude` from the project directory. A `SessionStart` hook provides the current date, active topic, and due reviews.
+2. **Choose a topic.** Run `/teach <topic>`. The tutor uses quick multiple-choice questions to assess your level, clarifies your goal, researches the topic, and proposes a dependency graph for the lesson.
+3. **Approve the plan.** Once you approve it, each concept follows a **motivate → establish → connect → check** teaching loop.
+4. **Demonstrate understanding.** Key prerequisite concepts and the end of each topic require short answers in your own words. Programming topics also include coding tasks.
+5. **Capture the lesson.** Your responses and the tutor's explanations are mirrored into a dated note. Diagrams are saved alongside the material.
+6. **Review and resume.** Each checked concept becomes a review card. Use `/review` for due cards, `/status` to inspect progress, and `/checkpoint` to save your place.
+
+## Getting started
+
+### Requirements
+
+- Claude Code
+- Python 3
+- Node.js 18 or later and npm
+- Chrome or Chromium available on `PATH` for diagram verification
+- Optional: `rsvg-convert`, provided by the `librsvg2-bin` package
+- Optional: an Obsidian vault for lesson notes
+
+### 1. Clone the repository
+
+Replace the placeholder URL with this repository's clone URL:
 
 ```bash
-git clone <this repo> ~/learning && cd ~/learning
-cd tools && PUPPETEER_SKIP_DOWNLOAD=1 npm install && cd ..   # mermaid renderer (uses system Chrome)
+git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git ~/learning
+cd ~/learning
 ```
 
-Requirements: Claude Code, python3, Node 18+, and Chrome or Chromium on PATH (for diagram
-verification). `rsvg-convert` (package `librsvg2-bin`) is optional.
+### 2. Install the diagram renderer
 
-Point the note folders at your vault in `learn.config.json`:
+```bash
+cd tools
+PUPPETEER_SKIP_DOWNLOAD=1 npm install
+cd ..
+```
+
+The Mermaid renderer uses your system Chrome or Chromium installation.
+
+### 3. Configure note storage
+
+To use Obsidian, update the following fields in `learn.config.json` to point to your vault. For example, when accessing a Windows vault from WSL:
 
 ```json
-"notesDir": "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning",
-"vizDir":   "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning/viz",
-"reviewsDir": "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning/reviews"
+{
+  "notesDir": "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning",
+  "vizDir": "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning/viz",
+  "reviewsDir": "/mnt/c/Users/<you>/OneDrive/Obsidian/<vault>/learning/reviews"
+}
 ```
 
-Then edit `LEARNER.md` and run `claude`.
+Without a configured vault, `notes/` serves as the default note directory.
+
+### 4. Set up your learner profile
+
+Edit `LEARNER.md` with your background, goals, and learning preferences, then launch Claude Code from the project root:
+
+```bash
+claude
+```
+
+Start your first lesson with a topic of your choice:
+
+```text
+/teach Python decorators
+```
 
 ## Commands
 
-| Command | What it does |
-|---|---|
-| `/teach <topic>` or `/teach continue` | Start or resume a lesson |
-| `/review [topic] [--limit N]` | Review due cards |
-| `/code-task` | Create or check a coding exercise |
-| `/visualize <idea>` | Add one verified diagram |
-| `/status` | Progress and due reviews |
-| `/checkpoint [note]` | Save state now |
+Run these commands inside Claude Code:
 
-Scripts can also be run directly: `python3 scripts/state.py show`, `python3 scripts/srs.py stats`,
-`python3 scripts/srs.py forecast`, `python3 scripts/exercise.py list`.
+| Command | Purpose |
+| --- | --- |
+| `/teach <topic>` | Start a lesson on a new topic. |
+| `/teach continue` | Resume the active lesson. |
+| `/review [topic] [--limit N]` | Review due cards, optionally filtered by topic and limited in number. |
+| `/code-task` | Create or check a coding exercise. |
+| `/visualize <idea>` | Add a verified diagram. |
+| `/status` | Show learning progress and due reviews. |
+| `/checkpoint [note]` | Save the current state with an optional note. |
 
-## Layout
+### Standalone scripts
 
-```
-.claude/settings.json   model pin, permissions, hooks (SessionStart, Stop, PreCompact)
-.claude/skills/         teach, review, code-task, visualize, status, checkpoint
-.claude/agents/         researcher, mermaid-maker, svg-maker
-scripts/                state.py, srs.py, exercise.py, render.py, hooks
-state/                  state.json, deck.json, progress.md
-notes/                  default note folder when no vault is configured
-exercises/              coding tasks
-tools/                  mermaid-cli (node_modules ignored by git)
-LEARNER.md              your profile and preferences
-CLAUDE.md               instructions the tutor reads every session
+You can also inspect state, reviews, and exercises directly from the terminal:
+
+```bash
+python3 scripts/state.py show
+python3 scripts/srs.py stats
+python3 scripts/srs.py forecast
+python3 scripts/exercise.py list
 ```
 
-## Changing models
+## Project structure
 
-The teacher uses the session model, pinned in `.claude/settings.json` (`"model": "opus"`).
-Override per session with `/model`. Subagent models are the `model:` line in each file under
-`.claude/agents/`.
+| Path | Purpose |
+| --- | --- |
+| `.claude/settings.json` | Session model, permissions, and `SessionStart`, `Stop`, and `PreCompact` hooks. |
+| `.claude/skills/` | Workflows for teaching, reviews, coding tasks, visualization, status, and checkpoints. |
+| `.claude/agents/` | Researcher, Mermaid, and SVG subagent definitions. |
+| `scripts/` | State management, review scheduling, exercise tooling, rendering, and hooks. |
+| `state/` | Persistent state in `state.json`, review cards in `deck.json`, and progress in `progress.md`. |
+| `notes/` | Default lesson notes when no vault is configured. |
+| `exercises/` | Coding tasks. |
+| `tools/` | Mermaid CLI dependencies; `node_modules/` is excluded from version control. |
+| `learn.config.json` | Note, diagram, and review folder configuration. |
+| `LEARNER.md` | Learner profile and preferences. |
+| `CLAUDE.md` | Tutor instructions loaded every session. |
+
+## Model configuration
+
+The tutor uses the session model configured in `.claude/settings.json`:
+
+```json
+"model": "opus"
+```
+
+Use `/model` inside Claude Code to override it for the current session. Subagent models are configured separately through the `model:` field in each definition under `.claude/agents/`.
