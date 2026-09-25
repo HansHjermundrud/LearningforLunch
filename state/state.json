@@ -1,12 +1,12 @@
 {
-  "version": 1,
+  "version": 2,
   "active_topic": "parallel-programming-with-openmp",
   "log_target": "/mnt/c/Users/hansh/OneDrive/Master/Learning/2026-09-24 Parallel programming with OpenMP.md",
   "topics": {
     "parallel-programming-with-openmp": {
       "title": "Parallel programming with OpenMP",
       "started": "2026-09-24",
-      "updated": "2026-09-25T14:39:15+02:00",
+      "updated": "2026-09-25T15:23:24+02:00",
       "finished": null,
       "status": "teaching",
       "goal": "Exam-grade understanding: look at C code and decide whether and how to parallelize it with OpenMP, and explain the benefits and limitations. Scope: core + tasks + extras (SIMD, nested parallelism, memory model/flush). Env: gcc 13.3, 8 hw threads.",
@@ -21,37 +21,58 @@
         "nodes": [
           {
             "id": "n1",
-            "label": "All threads in a team share one address space; only variables on a thread's own stack are its own",
+            "label": "One address space; variables declared inside a construct are private (spec rule; 'own stack' is the implementation picture)",
             "depends": [],
             "why": "unconditional truth; already held (probe)",
             "status": "done",
             "check": "short",
             "summary": "declaration location -> instance count landed on 2nd try; C gap: reads r=q as 'r points to q' (confuses copying a pointer's value with &q); revisit explicitly in n6 (private pointer, shared pointee)",
-            "done_at": "2026-09-24T13:09:50+02:00"
+            "done_at": "2026-09-24T13:09:50+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-24T13:09:50+02:00"
           },
           {
             "id": "n2",
-            "label": "Data race (same location, >=1 write, no ordering) is undefined behaviour; correct = race-free",
+            "label": "Data race (same location, >=1 write, unordered): C11 undefined behaviour, OpenMP 'unspecified'; race-free is necessary, not sufficient",
             "depends": [],
             "why": "the correctness criterion everything is checked against; learner holds 'wrong result', not yet 'UB'",
             "status": "done",
             "check": "short",
             "summary": "after correction: race -> UB independent of optimization level; correctness = race-free source (re-check 4/5)",
-            "done_at": "2026-09-24T13:26:23+02:00"
+            "done_at": "2026-09-24T13:26:23+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-24T13:26:23+02:00"
           },
           {
             "id": "n3",
-            "label": "Fork-join: parallel creates one team; every other construct only divides work among that team",
+            "label": "Fork-join: parallel creates the team; work-sharing constructs divide its work, synchronization constructs order it; none create threads",
             "depends": [],
             "why": "root that fixes the 'task = new thread' misconception",
             "status": "done",
             "check": "short",
             "summary": "fork-join landed: tasks run on existing team (5/5); after demo, parallel replicates vs omp for divides (re-check 5/5)",
-            "done_at": "2026-09-24T13:38:50+02:00"
+            "done_at": "2026-09-24T13:38:50+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-24T13:38:50+02:00"
           },
           {
             "id": "n4",
-            "label": "A loop is parallelizable iff its iterations are independent (no loop-carried dependence)",
+            "label": "A loop parallelizes AS WRITTEN (plain omp for) iff its iterations are independent; dependences need reduction, ordering or restructuring",
             "depends": [
               "n2"
             ],
@@ -59,7 +80,14 @@
             "status": "done",
             "check": "mcq",
             "summary": "derivation 3/5 (rule lacked 'different iterations'); after precise rule, classified 3 loops correctly (a[i]+=1 safe, a[i+1] anti-dep, shared scalar write) 5/5 each",
-            "done_at": "2026-09-24T14:10:52+02:00"
+            "done_at": "2026-09-24T14:10:52+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-24T14:10:52+02:00"
           },
           {
             "id": "n5",
@@ -72,7 +100,14 @@
             "status": "done",
             "check": "short",
             "summary": "derived implicit barrier between dependent loops (4/5); nowait check 5/5; static same-assignment rule for nowait introduced, revisit in n9",
-            "done_at": "2026-09-24T14:42:47+02:00"
+            "done_at": "2026-09-24T14:42:47+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-24T14:42:47+02:00"
           },
           {
             "id": "n6",
@@ -86,7 +121,14 @@
             "status": "done",
             "check": "short",
             "summary": "private/firstprivate/lastprivate/default(none) built from n1 inside/outside rule; private=uninit (1st try missed, fixed), firstprivate 5, lastprivate 5 after race-vs-nondeterminism correction, default(none) 3 (forgot scale), private pointer/shared pointee 4 (n1 pointer gap closing). Coding task next.",
-            "done_at": "2026-09-25T14:14:14+02:00"
+            "done_at": "2026-09-25T14:14:14+02:00",
+            "legacy_status": "done",
+            "required": true,
+            "coverage": "covered",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false,
+            "covered_at": "2026-09-25T14:14:14+02:00"
           },
           {
             "id": "n7",
@@ -98,11 +140,18 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": true,
+            "prep_status": "ready"
           },
           {
             "id": "n8",
-            "label": "Reductions: private copy at identity, combine at end; why only associative ops",
+            "label": "Reductions: private copy at the identity, combined in unspecified order; deterministic only for associative+commutative ops (FP sums vary)",
             "depends": [
               "n4",
               "n6",
@@ -111,7 +160,14 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": true,
+            "prep_status": "ready"
           },
           {
             "id": "n9",
@@ -122,7 +178,14 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": true,
+            "prep_status": "ready"
           },
           {
             "id": "n10",
@@ -134,7 +197,13 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           },
           {
             "id": "n11",
@@ -147,7 +216,13 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           },
           {
             "id": "n12",
@@ -159,7 +234,13 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           },
           {
             "id": "n13",
@@ -170,7 +251,13 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           },
           {
             "id": "n14",
@@ -181,7 +268,13 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           },
           {
             "id": "n15",
@@ -197,11 +290,17 @@
             "why": "",
             "status": "pending",
             "check": "",
-            "summary": ""
+            "summary": "",
+            "legacy_status": "pending",
+            "required": true,
+            "coverage": "pending",
+            "readiness": "unknown",
+            "retention": "unassessed",
+            "prepared": false
           }
         ]
       },
-      "next": "start n7 (synchronization: barrier, critical, atomic, single vs master/masked)",
+      "next": "Teach n7 · Synchronization (prepared; python3 scripts/state.py prep-show n7)",
       "log": [
         {
           "ts": "2026-09-24T12:21:05+02:00",
@@ -367,8 +466,522 @@
           "ts": "2026-09-25T14:39:15+02:00",
           "event": "next",
           "text": "start n7 (synchronization: barrier, critical, atomic, single vs master/masked)"
+        },
+        {
+          "ts": "2026-09-25T15:23:22+02:00",
+          "event": "node-edit",
+          "text": "n1: label: \"All threads in a team share one address space; only variables on a thread's own stack are its own\" -> \"One address space; variables declared inside a construct are private (spec rule; 'own stack' is the implementation picture)\" (audit 2026-09-25: spec data-sharing rule, not stack location, decides privacy; cross-task access to private variables is unspecified (OpenMP 5.2 §1.4.1, §5.1.1))"
+        },
+        {
+          "ts": "2026-09-25T15:23:22+02:00",
+          "event": "node-edit",
+          "text": "n2: label: 'Data race (same location, >=1 write, no ordering) is undefined behaviour; correct = race-free' -> \"Data race (same location, >=1 write, unordered): C11 undefined behaviour, OpenMP 'unspecified'; race-free is necessary, not sufficient\" (audit 2026-09-25: race freedom does not establish correctness or freedom from deadlock; both C11 and OpenMP wording apply)"
+        },
+        {
+          "ts": "2026-09-25T15:23:22+02:00",
+          "event": "node-edit",
+          "text": "n3: label: 'Fork-join: parallel creates one team; every other construct only divides work among that team' -> 'Fork-join: parallel creates the team; work-sharing constructs divide its work, synchronization constructs order it; none create threads' (audit 2026-09-25: 'every other construct only divides work' overstated; barriers/critical/atomic order work)"
+        },
+        {
+          "ts": "2026-09-25T15:23:22+02:00",
+          "event": "node-edit",
+          "text": "n4: label: 'A loop is parallelizable iff its iterations are independent (no loop-carried dependence)' -> 'A loop parallelizes AS WRITTEN (plain omp for) iff its iterations are independent; dependences need reduction, ordering or restructuring' (audit 2026-09-25: distinguish unsynchronized work-sharing from parallelization via reduction/ordered/algorithm change)"
+        },
+        {
+          "ts": "2026-09-25T15:23:22+02:00",
+          "event": "node-edit",
+          "text": "n8: label: 'Reductions: private copy at identity, combine at end; why only associative ops' -> 'Reductions: private copy at the identity, combined in unspecified order; deterministic only for associative+commutative ops (FP sums vary)' (audit 2026-09-25: 'only associative ops' conflated OpenMP's operator list, the order-independence condition and floating-point behaviour)"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n2: n2 label and card c69it1: 'correct = race-free' overstated"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n4: n4 label and card cuo6fg: 'parallelizable iff independent' now scoped to 'as written'"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n3: n3 label: constructs also order work"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n1: n1 label, cards c3eld3/c3kqx8: stack location replaced by the spec's data-sharing rule"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n8: n8 label: reduction operators, order-independence and floating point separated"
+        },
+        {
+          "ts": "2026-09-25T15:23:23+02:00",
+          "event": "correction",
+          "text": "n1: card cu1dsb invalidated: 'every thread prints 0' is not guaranteed"
+        },
+        {
+          "ts": "2026-09-25T15:23:24+02:00",
+          "event": "prep-topic",
+          "text": "6 chunks, 4 exit criteria, 19 sources"
+        },
+        {
+          "ts": "2026-09-25T15:23:24+02:00",
+          "event": "prep-node",
+          "text": "n7: ready, 5 check(s)"
+        },
+        {
+          "ts": "2026-09-25T15:23:24+02:00",
+          "event": "prep-node",
+          "text": "n8: ready, 4 check(s)"
+        },
+        {
+          "ts": "2026-09-25T15:23:24+02:00",
+          "event": "prep-node",
+          "text": "n9: ready, 3 check(s)"
+        }
+      ],
+      "attempts": [],
+      "pending": null,
+      "prep": {
+        "capability": "Read a C program, decide whether and how to parallelize it with OpenMP (independence, scoping, synchronization, reduction, scheduling, tasks), write the pragmas, and explain the benefits and the limitations (speedup bound, overheads, false sharing, bandwidth, memory model) at exam level.",
+        "environment": {
+          "language": "C11",
+          "compiler": "gcc 13.3 -fopenmp (_OPENMP 201511; 5.x constructs such as masked and atomic memory-order clauses are accepted)",
+          "threads": "8 hardware threads",
+          "spec": "OpenMP 5.2 for wording; gcc behaviour noted separately"
+        },
+        "chunks": [
+          {
+            "id": "s1",
+            "label": "Foundations (done)",
+            "nodes": [
+              "n1",
+              "n2",
+              "n3"
+            ]
+          },
+          {
+            "id": "s2",
+            "label": "Loops and scoping (done)",
+            "nodes": [
+              "n4",
+              "n5",
+              "n6"
+            ]
+          },
+          {
+            "id": "s3",
+            "label": "Synchronization, reductions, scheduling",
+            "nodes": [
+              "n7",
+              "n8",
+              "n9"
+            ]
+          },
+          {
+            "id": "s4",
+            "label": "Performance and tasks",
+            "nodes": [
+              "n10",
+              "n11"
+            ]
+          },
+          {
+            "id": "s5",
+            "label": "Memory model, SIMD, nesting",
+            "nodes": [
+              "n12",
+              "n13",
+              "n14"
+            ]
+          },
+          {
+            "id": "s6",
+            "label": "Exit: read code and decide",
+            "nodes": [
+              "n15"
+            ]
+          }
+        ],
+        "exit_criteria": [
+          {
+            "id": "x1",
+            "text": "Given a C loop nest, decide whether it can be parallelized as written, what dependence blocks it, and what construct or rewrite (reduction, scoping, ordering, restructuring) makes it parallel; write the pragma with clauses.",
+            "nodes": [
+              "n4",
+              "n6",
+              "n8",
+              "n9"
+            ],
+            "checks": [
+              {
+                "id": "xq1",
+                "type": "short",
+                "role": "exit",
+                "load_bearing": true,
+                "review": true,
+                "kind": "procedure",
+                "variants": [
+                  {
+                    "id": "v1",
+                    "question": "Decide for each loop whether it can be parallelized as written; if not, say what blocks it and give a race-free OpenMP version with clauses.",
+                    "code": "double s = 0.0, m = a[0];\nfor (int i = 0; i < n; i++) {\n    s += a[i] * b[i];\n    if (a[i] > m) m = a[i];\n}\nfor (int i = 1; i < n; i++) {\n    c[i] = c[i-1] + a[i];\n}\nfor (int i = 0; i < n; i++) {\n    int k = idx[i];\n    hist[k] += 1;\n}",
+                    "answer": "Loop 1: as written, s and m are shared accumulators updated by every iteration: a data race. Fix: #pragma omp parallel for reduction(+:s) reduction(max:m). Loop 2: a true loop-carried dependence (c[i] needs c[i-1] from the previous iteration): not parallelizable by a pragma; it is a prefix sum, which needs an algorithm change (two-pass scan) to parallelize. Loop 3: hist[k] with k data-dependent: two iterations may hit the same bin: a race. Fix: #pragma omp atomic on hist[k] += 1, or reduction(+:hist[0:bins]).",
+                    "required": [
+                      "loop 1: shared accumulators race; reduction(+:s) reduction(max:m)",
+                      "loop 2: c[i-1] is a loop-carried dependence; not parallelizable as written; needs an algorithm change (scan)",
+                      "loop 3: same bin from different iterations races; atomic on the update or an array-section reduction"
+                    ],
+                    "disqualifying": [
+                      "says loop 2 can be fixed with a clause",
+                      "treats the max as safe because it only reads a[i]"
+                    ],
+                    "rubric_version": 1,
+                    "accepted": [],
+                    "options": []
+                  }
+                ],
+                "hints": [
+                  "For each loop, name the memory locations written and ask whether two different iterations can touch one of them.",
+                  "A dependence on the previous iteration's result cannot be removed by a clause.",
+                  "Worked: loop 1's s is written every iteration: same location, no ordering: race; the reduction gives each thread its own s and combines them."
+                ],
+                "exercise": ""
+              }
+            ]
+          },
+          {
+            "id": "x2",
+            "text": "Explain a synchronization choice: which construct makes an update race-free, why, and what it costs; recognize when atomic is insufficient and when a barrier is required or must be avoided.",
+            "nodes": [
+              "n2",
+              "n5",
+              "n7"
+            ],
+            "checks": [
+              {
+                "id": "xq2",
+                "type": "short",
+                "role": "exit",
+                "load_bearing": true,
+                "review": true,
+                "variants": [
+                  {
+                    "id": "v1",
+                    "question": "Every thread computes a partial result and then must (1) add it to a shared total, (2) append a record to a shared log with a shared write index, and (3) after everyone is done, thread 0 prints the total. For each of the three steps say which OpenMP construct you use and why the alternatives are wrong or wasteful.",
+                    "answer": "(1) atomic update on the total: a single memory update, indivisible, cheaper than critical. (2) critical (or a lock): the index increment and the write to log[index] are two coupled operations on two locations; atomic covers only one update. (3) A barrier so all additions are done (the region-end barrier if the print is after the region, or #pragma omp barrier before a masked/single block inside it); masked alone has no barrier.",
+                    "required": [
+                      "atomic for the single shared update",
+                      "critical for the coupled index-and-write",
+                      "barrier before the print because masked has no implied barrier / region end has one"
+                    ],
+                    "disqualifying": [
+                      "says atomic protects both the index and the log write"
+                    ],
+                    "rubric_version": 1,
+                    "accepted": [],
+                    "options": []
+                  }
+                ],
+                "hints": [
+                  "Count how many memory locations each step updates.",
+                  "Which constructs end with an implicit barrier?",
+                  "Worked: step 2 touches idx and log[idx]; between the read of idx and the write to log another thread can run; only mutual exclusion around both is correct."
+                ],
+                "kind": "concept",
+                "exercise": ""
+              }
+            ]
+          },
+          {
+            "id": "x3",
+            "text": "Explain benefits and limitations: the speedup bound for a given serial fraction, fork/join and synchronization overhead, false sharing and memory bandwidth as reasons a correct program does not scale.",
+            "nodes": [
+              "n10",
+              "n12"
+            ],
+            "checks": [
+              {
+                "id": "xq3",
+                "type": "short",
+                "role": "exit",
+                "load_bearing": true,
+                "review": true,
+                "variants": [
+                  {
+                    "id": "v1",
+                    "question": "A correct parallel loop over 10^8 doubles (c[i] = a[i] + b[i]) gets 1.6x on 8 threads; a loop that does 200 flops per element on the same arrays gets 7x. A colleague says the first loop must still have a bug. Explain what limits each loop and what Amdahl's law does and does not say about this.",
+                    "answer": "Neither is buggy. The first loop does one add per 24 bytes moved: it is memory-bandwidth bound, so extra threads share the same bandwidth and stop helping once it is saturated. The second is compute bound, so it scales close to the thread count. Amdahl's bound (1/(s + (1-s)/p)) is about the serial fraction of the work; it does not model bandwidth, overhead or false sharing, which can cap speedup even when s is nearly 0.",
+                    "required": [
+                      "first loop is memory-bandwidth bound (few flops per byte)",
+                      "second loop is compute bound so it scales",
+                      "Amdahl bounds the serial fraction only; bandwidth/overhead are separate limits"
+                    ],
+                    "rubric_version": 1,
+                    "accepted": [],
+                    "disqualifying": [],
+                    "options": []
+                  }
+                ],
+                "hints": [
+                  "How many bytes move per floating-point operation in each loop?",
+                  "What resource is shared by all 8 threads regardless of the code?",
+                  "Worked: 24 bytes per add; 8 threads ask the same memory system; once it is saturated, time is set by bytes/bandwidth, not by threads."
+                ],
+                "kind": "concept",
+                "exercise": ""
+              }
+            ]
+          },
+          {
+            "id": "x4",
+            "text": "Tasks: explain when tasks fit better than loops (irregular or recursive work), that tasks run on the existing team, what taskwait/taskgroup order, and the default data scoping of task variables.",
+            "nodes": [
+              "n3",
+              "n11"
+            ],
+            "checks": [
+              {
+                "id": "xq4",
+                "type": "short",
+                "role": "exit",
+                "load_bearing": true,
+                "review": true,
+                "variants": [
+                  {
+                    "id": "v1",
+                    "question": "You parallelize a recursive tree walk with tasks. Say (1) why a parallel for does not fit, (2) how many threads run the tasks and where the tasks wait to be run, (3) what taskwait guarantees and does not guarantee, and (4) what the default data-sharing of a variable declared outside the task but inside the parallel region is, and why that default exists.",
+                    "answer": "(1) The work is a recursion of unknown shape, not a countable iteration space. (2) Only the team's threads; tasks are queued and picked up by whichever team thread is free. (3) taskwait waits for the child tasks of the current task, not for grandchildren (use taskgroup for the whole subtree). (4) firstprivate by default for such variables, because a task may run after the creating scope has moved on, so it needs its own copy of the value at creation.",
+                    "required": [
+                      "tasks fit irregular/recursive work that is not a countable loop",
+                      "tasks run on the existing team threads, queued",
+                      "taskwait waits for direct children only; taskgroup for descendants",
+                      "outside-declared variables are firstprivate by default in a task, because the task may outlive the scope"
+                    ],
+                    "rubric_version": 1,
+                    "accepted": [],
+                    "disqualifying": [],
+                    "options": []
+                  }
+                ],
+                "hints": [
+                  "What does a for loop need that a recursion does not have?",
+                  "Where did the threads come from?",
+                  "Worked: the creating thread continues; if the task read the original variable later the value might be gone; firstprivate snapshots it."
+                ],
+                "kind": "concept",
+                "exercise": ""
+              }
+            ]
+          }
+        ],
+        "sources": [
+          {
+            "id": "omp52-1.4.1",
+            "title": "OpenMP 5.2 §1.4.1 Structure of the OpenMP Memory Model",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu9.html",
+            "verified": "2026-09-25",
+            "note": "'Any other access by one task to the private variables of another task results in unspecified behavior.' 'If a data race occurs then the result of the program is unspecified.'"
+          },
+          {
+            "id": "omp52-5.1.1",
+            "title": "OpenMP 5.2 §5.1.1 Variables Referenced in a Construct",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu33.html",
+            "verified": "2026-09-25",
+            "note": "'Variables with automatic storage duration that are declared in a scope inside the construct are private.' Loop iteration variable of a loop-associated construct is private. In a parallel construct without default clause, other variables are shared."
+          },
+          {
+            "id": "omp52-5.3",
+            "title": "OpenMP 5.2 §5.3 List Item Privatization",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse25.html",
+            "verified": "2026-09-25",
+            "note": "New list item 'has an undefined initial value'; original's value after the region unspecified when aliased/accessed in the region."
+          },
+          {
+            "id": "omp52-5.4.4",
+            "title": "OpenMP 5.2 §5.4.4 firstprivate",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu38.html",
+            "verified": "2026-09-25",
+            "note": "'For variables of non-array type, the initialization occurs by copy assignment.'"
+          },
+          {
+            "id": "omp52-5.4.5",
+            "title": "OpenMP 5.2 §5.4.5 lastprivate",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu39.html",
+            "verified": "2026-09-25",
+            "note": "value from 'the sequentially last iteration of the associated loops' is assigned to the original."
+          },
+          {
+            "id": "omp52-5.5.2",
+            "title": "OpenMP 5.2 §5.5.2 OpenMP Reduction Expressions",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu46.html",
+            "verified": "2026-09-25",
+            "note": "'The number of times that the combiner expression is executed and the order of these executions for any reduction clause are unspecified.'"
+          },
+          {
+            "id": "omp52-5.5.4",
+            "title": "OpenMP 5.2 §5.5.4 Table 5.1 implicitly declared C reduction identifiers",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu47.html",
+            "verified": "2026-09-25",
+            "note": "+ 0; - 0 (deprecated); * 1; & ~0; | 0; ^ 0; && 1; || 0; max = minimal representable; min = maximal representable."
+          },
+          {
+            "id": "omp52-5.5.5",
+            "title": "OpenMP 5.2 §5.5.5 reduction clause semantics",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpsu49.html",
+            "verified": "2026-09-25",
+            "note": "copies 'initialized with the initializer value of the reduction identifier'; 'the original list item is updated by combining its original value with the final value of each of the private copies'. Array sections since 4.5."
+          },
+          {
+            "id": "omp52-15.2",
+            "title": "OpenMP 5.2 §15.2 critical construct",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse90.html",
+            "verified": "2026-09-25",
+            "note": "unnamed critical: 'as if an identical (unspecified) name was specified'; executed 'as if only a single thread at a time among all threads in the contention group'."
+          },
+          {
+            "id": "omp52-nesting",
+            "title": "OpenMP 5.2 Nesting of Regions",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse101.html",
+            "verified": "2026-09-25",
+            "note": "'A critical region may not be nested (closely or otherwise) inside a critical region with the same name. This restriction is not sufficient to prevent deadlock.'"
+          },
+          {
+            "id": "omp52-single",
+            "title": "OpenMP 5.2 single construct",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse62.html",
+            "verified": "2026-09-25",
+            "note": "'executed by only one of the threads in the team (not necessarily the primary thread)'; 'An implicit barrier occurs at the end of a single region if the nowait clause is not specified.'"
+          },
+          {
+            "id": "omp52-masked",
+            "title": "OpenMP 5.2 masked construct",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse61.html",
+            "verified": "2026-09-25",
+            "note": "'No implied barrier occurs either on entry to or exit from the masked construct.'"
+          },
+          {
+            "id": "omp52-deprecated",
+            "title": "OpenMP 5.2 Deprecated Features",
+            "url": "https://www.openmp.org/spec-html/5.2/openmpse140.html",
+            "verified": "2026-09-25",
+            "note": "master construct deprecated (since 5.1) in favour of masked."
+          },
+          {
+            "id": "omp51-atomic",
+            "title": "OpenMP 5.1 §2.19.7 atomic construct",
+            "url": "https://www.openmp.org/spec-html/5.1/openmpsu105.html",
+            "verified": "2026-09-25",
+            "note": "forms read/write/update/capture; update shapes x++, x--, ++x, --x, x binop= expr, x = x binop expr, x = expr binop x; without memory-order clause 'the effective memory ordering is relaxed'; 'A strong flush on the location designated by x is performed on entry to and exit from the atomic operation'."
+          },
+          {
+            "id": "omp50-barrier",
+            "title": "OpenMP 5.0 §2.17.2 barrier construct (wording unchanged in 5.2 §15.3)",
+            "url": "https://www.openmp.org/spec-html/5.0/openmpsu90.html",
+            "verified": "2026-09-25",
+            "note": "'Each barrier region must be encountered by all threads in a team or by none at all'; 'The sequence of worksharing regions and barrier regions encountered must be the same for every thread in a team.'"
+          },
+          {
+            "id": "omp50-schedule",
+            "title": "OpenMP 5.0 §2.9.2 worksharing-loop schedule kinds (unchanged in 5.2 §11.5.3)",
+            "url": "https://www.openmp.org/spec-html/5.0/openmpsu41.html",
+            "verified": "2026-09-25",
+            "note": "static: chunks 'assigned to the threads in the team in a round-robin fashion in the order of the thread number'; no chunk: 'approximately equal in size', at most one chunk per thread. dynamic: 'Each thread executes a chunk of iterations, then requests another chunk'; default chunk 1. guided: chunk proportional to unassigned iterations / threads, decreasing to chunk_size (default 1). auto: compiler/runtime. runtime: OMP_SCHEDULE. No clause: def-sched-var (implementation defined). Static reproducibility: same assignment in two loops with equal iteration count, same chunk (or both absent), same parallel region."
+          },
+          {
+            "id": "gcc-libgomp-schedule",
+            "title": "GCC libgomp: OMP_SCHEDULE and FOR construct implementation",
+            "url": "https://gcc.gnu.org/onlinedocs/libgomp/OMP_005fSCHEDULE.html",
+            "verified": "2026-09-25",
+            "note": "gcc's no-clause default is static (compiler generated); schedule(runtime) with OMP_SCHEDULE unset falls back to dynamic,1. Two different defaults."
+          },
+          {
+            "id": "gcc-libgomp-51",
+            "title": "GCC libgomp OpenMP 5.1 feature status",
+            "url": "https://gcc.gnu.org/onlinedocs/libgomp/OpenMP-5_002e1.html",
+            "verified": "2026-09-25",
+            "note": "masked and scope supported since GCC 12; gcc 13 accepts #pragma omp masked in C although _OPENMP reports 201511."
+          },
+          {
+            "id": "c11-5.1.2.4",
+            "title": "C11 §5.1.2.4 Multi-threaded executions and data races (N1570)",
+            "url": "https://port70.net/~nsz/c/c11/n1570.html#5.1.2.4",
+            "verified": "2026-09-25",
+            "note": "'Any such data race results in undefined behavior.' Applies to a C program compiled with gcc -fopenmp alongside OpenMP's 'unspecified'."
+          }
+        ],
+        "verified": "2026-09-25"
+      },
+      "corrections": [
+        {
+          "date": "2026-09-25",
+          "what": "n2 label and card c69it1: 'correct = race-free' overstated",
+          "why": "Race freedom is necessary (a race is UB in C11 §5.1.2.4, 'unspecified' in OpenMP 5.2 §1.4.1) but not sufficient: deadlock and wrong logic remain. Key amended; the learner's attempts stay valid because they matched what was asked.",
+          "node": "n2",
+          "card": "c69it1",
+          "sources": [
+            "c11-5.1.2.4",
+            "omp52-1.4.1"
+          ]
+        },
+        {
+          "date": "2026-09-25",
+          "what": "n4 label and card cuo6fg: 'parallelizable iff independent' now scoped to 'as written'",
+          "why": "Loops with an accumulator or ordered dependence are parallelizable via reduction, ordered or restructuring (n8). Rule key amended, attempts stay valid.",
+          "node": "n4",
+          "card": "cuo6fg",
+          "sources": [
+            "omp52-5.5.5"
+          ]
+        },
+        {
+          "date": "2026-09-25",
+          "what": "n3 label: constructs also order work",
+          "why": "Synchronization constructs (barrier, critical, atomic) order the team's work rather than dividing it; tasks still run on the existing team.",
+          "node": "n3",
+          "card": "",
+          "sources": [
+            "omp50-barrier"
+          ]
+        },
+        {
+          "date": "2026-09-25",
+          "what": "n1 label, cards c3eld3/c3kqx8: stack location replaced by the spec's data-sharing rule",
+          "why": "OpenMP 5.2 §5.1.1: variables declared in a scope inside the construct are private; 'one per thread's stack' is how gcc implements it, not the rule.",
+          "node": "n1",
+          "card": "c3eld3",
+          "sources": [
+            "omp52-5.1.1"
+          ]
+        },
+        {
+          "date": "2026-09-25",
+          "what": "n8 label: reduction operators, order-independence and floating point separated",
+          "why": "OpenMP provides a fixed identifier list (Table 5.1; '-' deprecated) and leaves the combine order unspecified (§5.5.2); deterministic results need an associative and commutative operator; FP addition is not, so last-bit differences are legal.",
+          "node": "n8",
+          "card": "",
+          "sources": [
+            "omp52-5.5.2",
+            "omp52-5.5.4"
+          ]
+        },
+        {
+          "date": "2026-09-25",
+          "what": "card cu1dsb invalidated: 'every thread prints 0' is not guaranteed",
+          "why": "The variable mine is private (declared inside the construct, §5.1.1); OpenMP 5.2 §1.4.1 says any other access by one task to the private variables of another task results in unspecified behavior. Both earlier attempts (q=1, q=2) are kept but no longer count against the learner; the card's schedule is reset and a replacement check is flagged. The standing note in LEARNER.md that 'a pointer reaches anything' is corrected.",
+          "node": "n1",
+          "card": "cu1dsb",
+          "sources": [
+            "omp52-1.4.1",
+            "omp52-5.1.1"
+          ]
         }
       ]
     }
-  }
+  },
+  "rev": 21,
+  "applied_ops": []
 }

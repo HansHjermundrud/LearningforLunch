@@ -1,0 +1,220 @@
+{
+  "label": "Scheduling: static, dynamic, guided, chunk size; load imbalance",
+  "objective": "Explain how static, dynamic and guided assign iterations to threads, predict which thread runs a given iteration under static (with and without a chunk), choose a schedule from the cost profile of the iterations, and state the exact condition under which nowait between two loops is safe.",
+  "why_needed": "n10 (performance) needs load balance and scheduling overhead; the exit criterion x1 asks for schedule choices; n5 left the nowait rule as a promise to explain here.",
+  "prerequisites": [
+    {
+      "id": "n5",
+      "why": "omp for divides iterations; nowait was introduced there"
+    }
+  ],
+  "motivation": "A triangular loop nest (inner loop runs i times) parallelized with the default schedule gives thread 7 almost 15 times the work of thread 0: the loop is correct and slow. The schedule clause decides who gets which iterations, and the right choice depends on how the cost varies across iterations and how much it costs to hand out work.",
+  "outline": [
+    "Three kinds of assignment (definitions): static: the iteration space is cut into chunks of chunk_size (or, without a chunk, into at most one approximately equal contiguous block per thread) and dealt round-robin in thread-number order, decided before the loop runs. dynamic: each thread takes a chunk (default 1), runs it, asks for the next: balanced, but each request costs synchronization. guided: like dynamic with chunks that start large (proportional to remaining/threads) and shrink to chunk_size (default 1): fewer requests, still balanced at the tail.",
+    "Derive static's assignment with the learner: 12 iterations, 3 threads: no chunk -> 0-3, 4-7, 8-11; static,2 -> chunks 0..5 dealt 0,1,2,0,1,2.",
+    "Choosing: uniform cost -> static (no chunk: zero overhead, contiguous memory); cost grows or is skewed but predictable -> static with a small chunk (round-robin spreads the expensive iterations) or dynamic; unpredictable cost -> dynamic or guided; big chunks trade balance for fewer requests and better locality.",
+    "auto and runtime (OMP_SCHEDULE) exist; no clause means an implementation-defined default (gcc: static). Do not confuse with libgomp's fallback for schedule(runtime) without OMP_SCHEDULE, which is dynamic,1.",
+    "The nowait guarantee (from n5): two loops assign iteration i to the same thread only under static schedules with the same iteration count and the same chunk (or both absent) in the same parallel region. So 'a[i] written in loop 1, read in loop 2 at the same i, nowait between' is safe only with an explicit schedule(static) on both; never with dynamic/guided/auto.",
+    "Connection forward: scheduling overhead and false sharing (adjacent iterations on different threads writing neighbouring elements with static,1) are n10's cost model."
+  ],
+  "claims": [
+    {
+      "id": "c1",
+      "kind": "definition",
+      "text": "static: chunks of chunk_size iterations are assigned round-robin in thread-number order; with no chunk_size, the iteration space is divided into at most one contiguous, approximately equal chunk per thread.",
+      "scope": "OpenMP 5.2 §11.5.3 (wording as 5.0 §2.9.2)",
+      "boundary": "the exact split of a remainder is unspecified beyond 'approximately equal'",
+      "sources": [
+        "omp50-schedule"
+      ]
+    },
+    {
+      "id": "c2",
+      "kind": "definition",
+      "text": "dynamic: each thread executes a chunk, then requests another until none remain; default chunk_size 1. guided: chunk size proportional to unassigned iterations divided by the number of threads, decreasing to chunk_size (default 1).",
+      "scope": "OpenMP 5.2 §11.5.3",
+      "boundary": "which thread gets which chunk is not determined",
+      "sources": [
+        "omp50-schedule"
+      ]
+    },
+    {
+      "id": "c3",
+      "kind": "guarantee",
+      "text": "Two worksharing loops assign the same logical iterations to the same threads when both use schedule(static) with the same iteration count and the same chunk_size (or both omit it) and bind to the same parallel region; this is what makes nowait between dependent loops safe.",
+      "scope": "OpenMP 5.2 §11.5.3",
+      "boundary": "no such guarantee for dynamic, guided or auto; one further condition (loops not associated with ordered/SIMD) exists and the exact 5.2 wording was not verified: do not over-specify",
+      "sources": [
+        "omp50-schedule"
+      ]
+    },
+    {
+      "id": "c4",
+      "kind": "assumption",
+      "text": "Without a schedule clause gcc uses static; the spec only says the default is implementation-defined (def-sched-var).",
+      "scope": "gcc 13 / libgomp",
+      "boundary": "libgomp's fallback for schedule(runtime) with OMP_SCHEDULE unset is dynamic,1: a different default",
+      "sources": [
+        "gcc-libgomp-schedule",
+        "omp50-schedule"
+      ]
+    },
+    {
+      "id": "c5",
+      "kind": "simplification",
+      "text": "dynamic balances load at the price of one synchronized request per chunk; static costs nothing at run time.",
+      "scope": "typical implementations",
+      "boundary": "static,1 can cause false sharing on adjacent elements (n10)",
+      "sources": [
+        "omp50-schedule"
+      ]
+    }
+  ],
+  "misconceptions": [
+    {
+      "id": "m1",
+      "text": "dynamic is always better because it balances load.",
+      "repair": "Each chunk costs a synchronized request and destroys locality; for uniform iterations static wins. Compare 10^8 cheap iterations with dynamic,1."
+    },
+    {
+      "id": "m2",
+      "text": "The default schedule is guaranteed to be static.",
+      "repair": "The spec says implementation-defined; gcc happens to use static. Write schedule(static) when you rely on it (nowait between dependent loops)."
+    },
+    {
+      "id": "m3",
+      "text": "nowait between two loops over the same n is safe because 'the same thread does the same i'.",
+      "repair": "Only under static with the same count and chunk; with dynamic the assignment differs between the loops."
+    },
+    {
+      "id": "m4",
+      "text": "static,1 and static (no chunk) are the same assignment.",
+      "repair": "static,1 deals iterations round-robin (0,1,2,0,1,2...); no chunk gives contiguous blocks. Different threads for most iterations, different cache behaviour."
+    }
+  ],
+  "checks": [
+    {
+      "id": "q1",
+      "type": "short",
+      "role": "normal",
+      "load_bearing": true,
+      "review": true,
+      "kind": "procedure",
+      "variants": [
+        {
+          "id": "v1",
+          "question": "12 iterations (i = 0..11), 3 threads. Which thread runs i = 7 under schedule(static)? Under schedule(static, 2)? Under schedule(dynamic, 2)? Justify each from how the schedule assigns iterations.",
+          "answer": "static (no chunk): contiguous approximately equal blocks 0-3, 4-7, 8-11, so thread 1. static,2: chunks of 2 (0-1, 2-3, 4-5, 6-7, 8-9, 10-11) dealt round-robin 0,1,2,0,1,2, so chunk 3 (i = 6,7) goes to thread 0. dynamic,2: not determined; whichever thread requests that chunk when it is free.",
+          "required": [
+            "static no chunk: contiguous blocks, i=7 on thread 1",
+            "static,2: round-robin chunks, i=7 on thread 0",
+            "dynamic: not determined, first free thread"
+          ],
+          "disqualifying": [
+            "says dynamic gives a fixed thread"
+          ],
+          "rubric_version": 1,
+          "accepted": [],
+          "options": []
+        },
+        {
+          "id": "v2",
+          "question": "20 iterations (i = 0..19), 4 threads. Which thread runs i = 13 under schedule(static)? Under schedule(static, 3)? Under schedule(guided)? Justify each from how the schedule assigns iterations.",
+          "answer": "static (no chunk): blocks 0-4, 5-9, 10-14, 15-19, so thread 2. static,3: chunks 0-2, 3-5, 6-8, 9-11, 12-14, 15-17, 18-19 dealt 0,1,2,3,0,1,2: chunk 4 (12-14) goes to thread 0. guided: not determined; chunks start large and shrink, taken by whichever thread is free.",
+          "required": [
+            "static no chunk: contiguous blocks, i=13 on thread 2",
+            "static,3: round-robin chunks, i=13 on thread 0",
+            "guided: not determined"
+          ],
+          "disqualifying": [
+            "says guided gives a fixed thread"
+          ],
+          "rubric_version": 1,
+          "accepted": [],
+          "options": []
+        }
+      ],
+      "hints": [
+        "Static without a chunk: one contiguous block per thread. How long is each block?",
+        "With a chunk: number the chunks, then deal them out 0,1,2,0,1,2.",
+        "Worked: chunks of 2 are (0,1),(2,3),(4,5),(6,7),...; the fourth chunk is number 3; 3 mod 3 = 0: thread 0."
+      ],
+      "exercise": ""
+    },
+    {
+      "id": "q2",
+      "type": "mcq",
+      "role": "normal",
+      "load_bearing": false,
+      "review": true,
+      "kind": "procedure",
+      "variants": [
+        {
+          "id": "v1",
+          "question": "The inner loop makes iteration i cost proportional to i. Which schedule balances the work with the least overhead?",
+          "code": "#pragma omp parallel for schedule(???)\nfor (int i = 0; i < n; i++)\n    for (int j = 0; j < i; j++)\n        work(i, j);",
+          "options": [
+            "schedule(static): contiguous blocks give every thread the same number of iterations",
+            "schedule(static, 1) or schedule(dynamic): round-robin or on-demand spreads the expensive late iterations over all threads",
+            "schedule(guided, n): one big chunk keeps locality",
+            "I don't know"
+          ],
+          "answer": "schedule(static, 1) or schedule(dynamic): round-robin or on-demand spreads the expensive late iterations over all threads",
+          "required": [],
+          "rubric_version": 1,
+          "accepted": [],
+          "disqualifying": []
+        }
+      ],
+      "hints": [
+        "Same number of iterations is not the same amount of work here."
+      ],
+      "exercise": ""
+    },
+    {
+      "id": "q3",
+      "type": "short",
+      "role": "fresh",
+      "load_bearing": true,
+      "review": true,
+      "kind": "concept",
+      "variants": [
+        {
+          "id": "v1",
+          "question": "Loop 2 reads b[i] that loop 1 wrote at the same i. Is the nowait safe as written? State the exact condition under which it is, and rewrite the pragmas so the safety is guaranteed rather than assumed.",
+          "code": "#pragma omp parallel\n{\n    #pragma omp for nowait\n    for (int i = 0; i < n; i++)\n        b[i] = f(a[i]);\n    #pragma omp for\n    for (int i = 0; i < n; i++)\n        c[i] = g(b[i]);\n}",
+          "answer": "Not guaranteed as written: with no schedule clause the schedule is implementation-defined (gcc uses static, so it works there by luck of the default). The spec guarantees the same iteration-to-thread assignment only when both loops use schedule(static) with the same iteration count and the same chunk_size (or none) in the same parallel region. Write schedule(static) on both loops; then thread t writes b[i] and later reads the same b[i], ordered within one thread, so no barrier is needed. With dynamic or guided the nowait would be a race.",
+          "required": [
+            "default schedule is implementation-defined: not guaranteed as written",
+            "condition: both loops static, same iteration count, same chunk (or none), same parallel region",
+            "fix: schedule(static) on both; then the same thread writes and reads b[i]"
+          ],
+          "disqualifying": [
+            "says nowait is always safe when n is the same",
+            "says it needs dynamic to be safe"
+          ],
+          "rubric_version": 1,
+          "accepted": [],
+          "options": []
+        }
+      ],
+      "hints": [
+        "What does the spec say the schedule is when you write no clause?",
+        "Under which schedule does iteration i land on the same thread in both loops?",
+        "Worked: schedule(static) on both, same n, no chunk: block boundaries identical, so thread t owns the same i in both loops."
+      ],
+      "exercise": ""
+    }
+  ],
+  "code_exercise": null,
+  "review_suitability": "q1 (assignment rule) and q3 (nowait condition) are durable; q2 is a recognition check on the cost profile.",
+  "status": "ready",
+  "verified": "2026-09-25",
+  "sources": [
+    "omp50-schedule",
+    "gcc-libgomp-schedule"
+  ],
+  "id": "n9",
+  "version": 1,
+  "saved": "2026-09-25T15:23:24+02:00"
+}

@@ -1,41 +1,75 @@
 {
-  "version": 1,
+  "version": 2,
   "cards": [
     {
       "id": "cu1dsb",
       "topic": "parallel-programming-with-openmp",
       "node": "n1",
       "type": "mcq",
-      "question": "In a parallel region: 'int mine = omp_get_thread_num(); if (mine == 0) p = &mine; #pragma omp barrier; printf(\"%d\\n\", *p); #pragma omp barrier' where int *p is declared before the region. What prints?",
-      "answer": "Every thread prints 0",
+      "question": "int *p is declared before the region. In the parallel region: int mine = omp_get_thread_num(); if (mine == 0) p = &mine; then a barrier, then printf(\"%d\\n\", *p); then a barrier. What does OpenMP guarantee about the output?",
+      "answer": "Nothing: mine is private to each thread's task, and OpenMP says access by one task to another task's private variable is unspecified behaviour, even though the address space is shared",
       "key_points": [],
       "options": [
-        "Every thread prints 0",
+        "Every thread prints 0: one address space, so the pointer reaches thread 0's variable",
+        "Nothing: mine is private to each thread's task, and OpenMP says access by one task to another task's private variable is unspecified behaviour, even though the address space is shared",
         "Each thread prints its own id",
-        "Undefined: other threads cannot access thread 0's stack",
         "I don't know"
       ],
       "task": "",
       "created": "2026-09-24",
-      "due": "2026-09-26",
+      "due": "2026-09-25",
       "interval": 1,
-      "ease": 1.64,
+      "ease": 2.5,
       "reps": 0,
-      "lapses": 2,
+      "lapses": 0,
       "history": [
         {
           "date": "2026-09-24",
           "q": 1,
-          "note": "chose 'each prints own id'"
+          "note": "chose 'each prints own id'",
+          "kind": "initial",
+          "valid": false,
+          "rubric_version": 1,
+          "invalid_reason": "key v1 invalidated: the key claimed a guaranteed output; OpenMP 5.2 §1.4.1 makes reading another task's private variable unspecified behavior"
         },
         {
           "date": "2026-09-25",
           "q": 2,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": false,
+          "rubric_version": 1,
+          "invalid_reason": "key v1 invalidated: the key claimed a guaranteed output; OpenMP 5.2 §1.4.1 makes reading another task's private variable unspecified behavior"
         }
       ],
       "suspended": false,
-      "points": "p is shared; every thread can read thread 0's stack variable through the pointer: one address space, privacy is only about names."
+      "explanation": "Physically there is one address space and gcc will usually print 0 four times, but that is an observation, not a guarantee: mine is private (declared inside the construct, OpenMP 5.2 §5.1.1) and §1.4.1 says any other access by one task to the private variables of another task results in unspecified behavior. Privacy is a rule about which accesses are allowed, not only about names.",
+      "rubric_version": 2,
+      "key_history": [
+        {
+          "question": "In a parallel region: 'int mine = omp_get_thread_num(); if (mine == 0) p = &mine; #pragma omp barrier; printf(\"%d\\n\", *p); #pragma omp barrier' where int *p is declared before the region. What prints?",
+          "answer": "Every thread prints 0",
+          "key_points": [],
+          "options": [
+            "Every thread prints 0",
+            "Each thread prints its own id",
+            "Undefined: other threads cannot access thread 0's stack",
+            "I don't know"
+          ],
+          "explanation": "p is shared; every thread can read thread 0's stack variable through the pointer: one address space, privacy is only about names.",
+          "variants": [],
+          "rubric_version": 1,
+          "replaced": "2026-09-25",
+          "reason": "the key claimed a guaranteed output; OpenMP 5.2 §1.4.1 makes reading another task's private variable unspecified behavior",
+          "mode": "invalidate"
+        }
+      ],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "last_graduated": null,
+      "needs_replacement_check": true
     },
     {
       "id": "c3kqx8",
@@ -45,8 +79,10 @@
       "question": "In the n1 snippet (mine = thread id; if mine==0, p=&mine; barrier; printf *p; barrier), int *p is moved INSIDE the parallel region, above mine. What does each thread print now, and why?",
       "answer": "Declaring p inside the region gives each thread its own instance of p. Only thread 0 assigns its p (to its own mine), so thread 0 prints 0. Threads 1-3 dereference their own uninitialised p: undefined behaviour (garbage or a crash). Names declared inside the region are per-thread; the pointer value, not the name, decides which memory is read.",
       "key_points": [
-        "each thread has its own p|only thread 0's p is set",
-        "thread 0 prints 0|threads 1-3 dereference an uninitialised pointer = undefined behaviour"
+        "each thread has its own p",
+        "only thread 0's p is set",
+        "thread 0 prints 0",
+        "threads 1-3 dereference an uninitialised pointer = undefined behaviour"
       ],
       "options": [],
       "task": "",
@@ -60,15 +96,29 @@
         {
           "date": "2026-09-24",
           "q": 1,
-          "note": "said moving p inside 'wouldn't matter'; missed per-thread p and UB; said p 'has the value 0' (pointer vs pointee)"
+          "note": "said moving p inside 'wouldn't matter'; missed per-thread p and UB; said p 'has the value 0' (pointer vs pointee)",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 4,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c3eld3",
@@ -76,9 +126,12 @@
       "node": "n1",
       "type": "short",
       "question": "int a=0; int *q=malloc(sizeof(int)); #pragma omp parallel num_threads(4) { int b=0; int *r=q; }  (1) How many instances exist of a, b, q, r and of the heap int q points to? (2) Every r holds the same value: what is it, and what memory does it lead to?",
-      "answer": "(1) a: 1, q: 1 (declared outside, shared); b: 4, r: 4 (declared inside, one per thread's stack); the heap int: 1 (malloc'd once, before the region). (2) Each r holds the address stored in q, so all four private r's point to the single shared heap int: private pointers, shared pointee.",
+      "answer": "(1) a: 1, q: 1 (declared outside, shared); b: 4, r: 4 (declared inside the construct, so private by OpenMP's data-sharing rule: one per thread; gcc places them on each thread's stack); the heap int: 1 (malloc'd once, before the region). (2) Each r holds the address stored in q, so all four private r's point to the single shared heap int: private pointers, shared pointee.",
       "key_points": [
-        "a and q: one instance each|b and r: four instances each|heap int: one|all r hold q's address -> same single heap int (private pointer, shared pointee)"
+        "a and q: one instance each",
+        "b and r: four instances each (declared inside the construct: private by OpenMP's data-sharing rule; gcc puts them on each thread's stack)",
+        "heap int: one",
+        "all r hold q's address -> same single heap int (private pointer, shared pointee)"
       ],
       "options": [],
       "task": "",
@@ -92,15 +145,47 @@
         {
           "date": "2026-09-24",
           "q": 3,
-          "note": "counts a,b,q,r right; missed heap int; said r points to q (pointer copy vs address-of)"
+          "note": "counts a,b,q,r right; missed heap int; said r points to q (pointer copy vs address-of)",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 2,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 2,
+      "key_history": [
+        {
+          "question": "int a=0; int *q=malloc(sizeof(int)); #pragma omp parallel num_threads(4) { int b=0; int *r=q; }  (1) How many instances exist of a, b, q, r and of the heap int q points to? (2) Every r holds the same value: what is it, and what memory does it lead to?",
+          "answer": "(1) a: 1, q: 1 (declared outside, shared); b: 4, r: 4 (declared inside, one per thread's stack); the heap int: 1 (malloc'd once, before the region). (2) Each r holds the address stored in q, so all four private r's point to the single shared heap int: private pointers, shared pointee.",
+          "key_points": [
+            "a and q: one instance each",
+            "b and r: four instances each",
+            "heap int: one",
+            "all r hold q's address -> same single heap int (private pointer, shared pointee)"
+          ],
+          "options": [],
+          "explanation": "",
+          "variants": [],
+          "rubric_version": 1,
+          "replaced": "2026-09-25",
+          "reason": "privacy is the spec's data-sharing rule; the per-thread stack is gcc's implementation (audit 2026-09-25)",
+          "mode": "amend"
+        }
+      ],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-24"
     },
     {
       "id": "ceh7ie",
@@ -110,7 +195,10 @@
       "question": "Global int done=0 (plain int, no atomics). In a parallel region thread 0 does work then sets done=1; thread 1 spins 'while (!done) {}'. At -O0 it finishes; at -O2 thread 1 spins forever. Why is the compiler allowed to do this?",
       "answer": "The flag accesses are a data race (same location, one write, no synchronization ordering them), and a data race is undefined behaviour. The compiler therefore may assume no other thread changes done while thread 1 runs the loop, so it reads done once (into a register) and turns the loop into 'if (!done) for(;;);'. The program is not 'slightly wrong', it has no defined meaning; the fix is synchronization (atomics/flush/critical), not luck.",
       "key_points": [
-        "it is a data race|data race = undefined behaviour, not just a wrong value|compiler assumes single-threaded view: loads done once / hoists it out of the loop|fix needs synchronization"
+        "it is a data race",
+        "data race = undefined behaviour, not just a wrong value",
+        "compiler assumes single-threaded view: loads done once / hoists it out of the loop",
+        "fix needs synchronization"
       ],
       "options": [],
       "task": "",
@@ -124,15 +212,47 @@
         {
           "date": "2026-09-24",
           "q": 2,
-          "note": "guessed compiler assumed done never changes (good) but attributed it to -O2 license; did not name race/UB; thought program exited"
+          "note": "guessed compiler assumed done never changes (good) but attributed it to -O2 license; did not name race/UB; thought program exited",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 3,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 2,
+      "key_history": [
+        {
+          "question": "Global int done=0 (plain int, no atomics). In a parallel region thread 0 does work then sets done=1; thread 1 spins 'while (!done) {}'. At -O0 it finishes; at -O2 thread 1 spins forever. Why is the compiler allowed to do this?",
+          "answer": "The flag accesses are a data race (same location, one write, no synchronization ordering them), and a data race is undefined behaviour. The compiler therefore may assume no other thread changes done while thread 1 runs the loop, so it reads done once (into a register) and turns the loop into 'if (!done) for(;;);'. The program is not 'slightly wrong', it has no defined meaning; the fix is synchronization (atomics/flush/critical), not luck.",
+          "key_points": [
+            "it is a data race",
+            "data race = undefined behaviour, not just a wrong value",
+            "compiler assumes single-threaded view: loads done once / hoists it out of the loop",
+            "fix needs synchronization"
+          ],
+          "options": [],
+          "explanation": "",
+          "variants": [],
+          "rubric_version": 1,
+          "replaced": "2026-09-25",
+          "reason": "name both rules: C11 undefined behaviour and OpenMP's 'unspecified' (audit 2026-09-25)",
+          "mode": "amend"
+        }
+      ],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "Two rules apply to a C program compiled with gcc -fopenmp: C11 §5.1.2.4 says a data race is undefined behaviour (which is what licenses the compiler to hoist the load), and OpenMP 5.2 §1.4.1 says the result of a program with a data race is unspecified. Neither lets you reason about the outcome.",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c69it1",
@@ -140,10 +260,13 @@
       "node": "n2",
       "type": "short",
       "question": "The racy spin-flag program (plain int done; thread 1 spins while(!done)) printed the right output when compiled with -O0. Is the -O0 program correct? Justify from the definition of a data race.",
-      "answer": "No. The source still contains a data race: thread 0 writes done, thread 1 reads it, same location, no synchronization ordering them. A data race makes the program's behaviour undefined regardless of compiler flags. -O0 happened to reload done from memory every iteration, so it worked by luck; a different flag, compiler version or machine may break it. Correctness is a property of the source (race-free), not of an observed run.",
+      "answer": "No. The source still contains a data race: thread 0 writes done, thread 1 reads it, same location, no synchronization ordering them. A data race makes the program's behaviour undefined (C11) regardless of compiler flags; OpenMP's own memory model calls the result unspecified. -O0 happened to reload done from memory every iteration, so it worked by luck; a different flag, compiler version or machine may break it. Race freedom of the source is a necessary condition for correctness, judged from the source, never from an observed run; it is not sufficient on its own (a race-free program can still deadlock or compute the wrong thing).",
       "key_points": [
-        "no, still incorrect|names the race: same location, one write, no ordering|race = undefined behaviour independent of flags|-O0 working is luck",
-        "correctness is race-freedom of the source, not observed output"
+        "no, still incorrect",
+        "names the race: same location, one write, no ordering",
+        "race = undefined behaviour (C11) / unspecified result (OpenMP) independent of flags",
+        "-O0 working is luck",
+        "race-freedom of the source is necessary for correctness and independent of observed output; it is not sufficient (deadlock, wrong logic remain)"
       ],
       "options": [],
       "task": "",
@@ -157,15 +280,48 @@
         {
           "date": "2026-09-24",
           "q": 4,
-          "note": "correct: race -> UB regardless of flags; didn't spell out the race conditions or 'worked by luck'"
+          "note": "correct: race -> UB regardless of flags; didn't spell out the race conditions or 'worked by luck'",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 4,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 2,
+      "key_history": [
+        {
+          "question": "The racy spin-flag program (plain int done; thread 1 spins while(!done)) printed the right output when compiled with -O0. Is the -O0 program correct? Justify from the definition of a data race.",
+          "answer": "No. The source still contains a data race: thread 0 writes done, thread 1 reads it, same location, no synchronization ordering them. A data race makes the program's behaviour undefined regardless of compiler flags. -O0 happened to reload done from memory every iteration, so it worked by luck; a different flag, compiler version or machine may break it. Correctness is a property of the source (race-free), not of an observed run.",
+          "key_points": [
+            "no, still incorrect",
+            "names the race: same location, one write, no ordering",
+            "race = undefined behaviour independent of flags",
+            "-O0 working is luck",
+            "correctness is race-freedom of the source, not observed output"
+          ],
+          "options": [],
+          "explanation": "",
+          "variants": [],
+          "rubric_version": 1,
+          "replaced": "2026-09-25",
+          "reason": "race freedom is necessary, not sufficient (audit 2026-09-25)",
+          "mode": "amend"
+        }
+      ],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "cjq9rt",
@@ -192,15 +348,29 @@
         {
           "date": "2026-09-24",
           "q": 1,
-          "note": "answered 32: thinks omp for runs full loop on each thread"
+          "note": "answered 32: thinks omp for runs full loop on each thread",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c88nn7",
@@ -227,15 +397,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 2,
-          "note": "chose 'one new thread per task' (got it right yesterday)"
+          "note": "chose 'one new thread per task' (got it right yesterday)",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-24"
     },
     {
       "id": "cm8tly",
@@ -245,7 +429,9 @@
       "question": "#pragma omp parallel num_threads(3) { #pragma omp for  for (int i=0;i<6;i++) printf(\"X\\n\");   for (int j=0;j<2;j++) printf(\"Y\\n\"); }  How many X and Y lines, and why?",
       "answer": "6 X and 6 Y. parallel makes all 3 threads execute the whole block. The omp for loop is a work-sharing construct: its 6 iterations are divided among the 3 threads, each iteration run once -> 6 X. The second loop has no pragma, so every thread runs all of it: 3 threads x 2 = 6 Y.",
       "key_points": [
-        "X = 6: omp for splits the iterations, each runs once|Y = 6: plain loop is run fully by every thread (3 x 2)|parallel = every thread runs the block",
+        "X = 6: omp for splits the iterations, each runs once",
+        "Y = 6: plain loop is run fully by every thread (3 x 2)",
+        "parallel = every thread runs the block",
         "for = divide, not replicate"
       ],
       "options": [],
@@ -260,15 +446,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "cuo6fg",
@@ -276,9 +476,12 @@
       "node": "n4",
       "type": "short",
       "question": "Loop A: for (i=0;i<n;i++) b[i] = 2*a[i];  Loop B: for (i=1;i<n;i++) a[i] = a[i-1] + 1;  Which can safely get '#pragma omp parallel for', and what is the general rule for when a loop's iterations may be split across threads?",
-      "answer": "A is safe: iteration i writes only b[i] and only reads a, so no two iterations touch a common location with a write. B is not: iteration i reads a[i-1], which iteration i-1 writes; with omp for those iterations may run on different threads concurrently or in either order -> a data race and an order-dependent result. Rule: a loop can be parallelized iff its iterations are independent: no location is written by one iteration and read or written by another (no loop-carried dependence). Then any order or overlap of iterations gives the same result.",
+      "answer": "A is safe: iteration i writes only b[i] and only reads a, so no two iterations touch a common location with a write. B is not: iteration i reads a[i-1], which iteration i-1 writes; with omp for those iterations may run on different threads concurrently or in either order -> a data race and an order-dependent result. Rule: a loop can be parallelized as written (a plain omp for, no clauses) iff its iterations are independent: no location is written by one iteration and read or written by another (no loop-carried dependence). A loop with a dependence is not necessarily hopeless: an accumulator becomes a reduction, some orderings can be kept with ordered, and some algorithms (prefix sums) are restructured.",
       "key_points": [
-        "A safe, B unsafe|B: iteration i reads what iteration i-1 writes|omp for = iterations concurrent, in any order, on different threads -> race|rule: no location written by one iteration and read/written by another (no loop-carried dependence)"
+        "A safe, B unsafe",
+        "B: iteration i reads what iteration i-1 writes",
+        "omp for = iterations concurrent, in any order, on different threads -> race",
+        "rule for parallelizing AS WRITTEN (plain omp for, no clauses): no location written by one iteration and read or written by another (no loop-carried dependence); a dependence like an accumulator can still be handled with reduction, ordered or a restructured algorithm"
       ],
       "options": [],
       "task": "",
@@ -292,15 +495,47 @@
         {
           "date": "2026-09-24",
           "q": 3,
-          "note": "A reasoning good; B right verdict but didn't locate cross-iteration a[i-1]; rule vague ('same thing', 'where order matters') - misses 'different iterations'"
+          "note": "A reasoning good; B right verdict but didn't locate cross-iteration a[i-1]; rule vague ('same thing', 'where order matters') - misses 'different iterations'",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 3,
-          "note": "verdicts right; B reason 'reads same array it writes' (not cross-iteration); rule 'reads separate from writes' still misses 'different iterations'"
+          "note": "verdicts right; B reason 'reads same array it writes' (not cross-iteration); rule 'reads separate from writes' still misses 'different iterations'",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 2,
+      "key_history": [
+        {
+          "question": "Loop A: for (i=0;i<n;i++) b[i] = 2*a[i];  Loop B: for (i=1;i<n;i++) a[i] = a[i-1] + 1;  Which can safely get '#pragma omp parallel for', and what is the general rule for when a loop's iterations may be split across threads?",
+          "answer": "A is safe: iteration i writes only b[i] and only reads a, so no two iterations touch a common location with a write. B is not: iteration i reads a[i-1], which iteration i-1 writes; with omp for those iterations may run on different threads concurrently or in either order -> a data race and an order-dependent result. Rule: a loop can be parallelized iff its iterations are independent: no location is written by one iteration and read or written by another (no loop-carried dependence). Then any order or overlap of iterations gives the same result.",
+          "key_points": [
+            "A safe, B unsafe",
+            "B: iteration i reads what iteration i-1 writes",
+            "omp for = iterations concurrent, in any order, on different threads -> race",
+            "rule: no location written by one iteration and read/written by another (no loop-carried dependence)"
+          ],
+          "options": [],
+          "explanation": "",
+          "variants": [],
+          "rubric_version": 1,
+          "replaced": "2026-09-25",
+          "reason": "rule scoped to parallelizing as written; dependences may be handled by reduction/ordering/restructuring (audit 2026-09-25)",
+          "mode": "amend"
+        }
+      ],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c2kn41",
@@ -326,15 +561,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "ccakmt",
@@ -360,15 +609,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c38zyu",
@@ -394,15 +657,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c9zyrj",
@@ -412,7 +689,10 @@
       "question": "#pragma omp parallel { #pragma omp for  for(i=0;i<n;i++) a[i]=f(i);   #pragma omp for  for(i=0;i<n;i++) b[i]=a[n-1-i]; }  What could go wrong between the two loops if threads just ran on, and what must OpenMP therefore put between them?",
       "answer": "Iteration i of loop 2 reads a[n-1-i], which in loop 1 was written by a (probably) different thread. If a thread finishing its share of loop 1 early started loop 2 immediately, it could read a[n-1-i] before the other thread wrote it: a race / stale value. So every thread must finish loop 1 before any thread starts loop 2: a barrier. OpenMP puts an implicit barrier at the end of every omp for (removable with nowait).",
       "key_points": [
-        "loop 2 reads elements written by other threads in loop 1|early thread could read before write -> race|need all threads done with loop 1 before loop 2: barrier|omp for ends with an implicit barrier"
+        "loop 2 reads elements written by other threads in loop 1",
+        "early thread could read before write -> race",
+        "need all threads done with loop 1 before loop 2: barrier",
+        "omp for ends with an implicit barrier"
       ],
       "options": [],
       "task": "",
@@ -426,15 +706,29 @@
         {
           "date": "2026-09-24",
           "q": 4,
-          "note": "derived the barrier correctly; didn't name that a[n-1-i] was written by a different thread"
+          "note": "derived the barrier correctly; didn't name that a[n-1-i] was written by a different thread",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 3,
-          "note": "barrier right; mechanism vague (didn't say thread reads a[n-1-i] written by another thread); wrote explicit #pragma omp barrier, didn't say omp for already has an implicit one"
+          "note": "barrier right; mechanism vague (didn't say thread reads a[n-1-i] written by another thread); wrote explicit #pragma omp barrier, didn't say omp for already has an implicit one",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "cppjk8",
@@ -461,15 +755,29 @@
         {
           "date": "2026-09-24",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         },
         {
           "date": "2026-09-25",
           "q": 2,
-          "note": "chose 'loop 2 may start before loop 1 finished' as a bug: treats overlap as wrong even without dependence"
+          "note": "chose 'loop 2 may start before loop 1 finished' as a bug: treats overlap as wrong even without dependence",
+          "kind": "review",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-24"
     },
     {
       "id": "cdxo04",
@@ -479,7 +787,10 @@
       "question": "double tmp; (declared before) #pragma omp parallel for  for (int i=0;i<n;i++) { tmp = 2*a[i]; b[i] = tmp + 1; }  What goes wrong, and how can you fix it using only the rule for where a variable is declared?",
       "answer": "tmp is declared outside the region, so it is shared: one instance for the whole team. Every iteration writes tmp and then reads it back. Iterations on different threads touch that same location with writes and no ordering: a data race, so UB. Concretely, thread A writes tmp = 2*a[3], thread B overwrites it with 2*a[7], then A reads B's value, so b[3] gets the wrong result. Fix: declare tmp inside the loop body (double tmp = 2*a[i];). A variable declared inside the region lives on each thread's own stack, so each thread gets its own tmp and nothing is shared.",
       "key_points": [
-        "tmp declared outside -> shared, one instance|every iteration writes and reads it -> race between threads (UB)|concrete interleaving: another thread overwrites tmp between the write and the read -> wrong b[i]|fix: declare tmp inside the loop body -> one per thread"
+        "tmp declared outside -> shared, one instance",
+        "every iteration writes and reads it -> race between threads (UB)",
+        "concrete interleaving: another thread overwrites tmp between the write and the read -> wrong b[i]",
+        "fix: declare tmp inside the loop body -> one per thread"
       ],
       "options": [],
       "task": "",
@@ -493,10 +804,21 @@
         {
           "date": "2026-09-25",
           "q": 3,
-          "note": "fix right (declare inside); diagnosis vague 'depends on iteration order', didn't name shared tmp, race or interleaving"
+          "note": "fix right (declare inside); diagnosis vague 'depends on iteration order', didn't name shared tmp, race or interleaving",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "cvmhn3",
@@ -506,7 +828,10 @@
       "question": "int x = 5; #pragma omp parallel num_threads(4) private(x) { x = x + omp_get_thread_num(); printf(\"%d\\n\", x); }  What does each thread print, and what would the private copies need for every thread to print 5 + its id?",
       "answer": "Garbage (an indeterminate value), not 5 + id. private(x) gives each thread a brand-new x, exactly as if 'int x;' were declared inside the region with no initializer, so each copy starts uninitialised and x + id reads whatever happens to be there. The original 5 is never copied in. For 5 + id, each private copy must be initialised from the original's value when the region starts: that is what firstprivate(x) does.",
       "key_points": [
-        "private copy = new variable, as if declared inside without initializer|so it is uninitialised: prints garbage, not 5+id|the original's 5 is not copied in|need each copy initialised from the original at entry (firstprivate)"
+        "private copy = new variable, as if declared inside without initializer",
+        "so it is uninitialised: prints garbage, not 5+id",
+        "the original's 5 is not copied in",
+        "need each copy initialised from the original at entry (firstprivate)"
       ],
       "options": [],
       "task": "",
@@ -520,10 +845,21 @@
         {
           "date": "2026-09-25",
           "q": 1,
-          "note": "said private copies start at 5 (thinks private copies the original value); said nothing more needed"
+          "note": "said private copies start at 5 (thinks private copies the original value); said nothing more needed",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": null
     },
     {
       "id": "c7ycsh",
@@ -552,10 +888,21 @@
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "ciga1v",
@@ -565,7 +912,10 @@
       "question": "int last = -1; #pragma omp parallel for private(last)  for (int i=0;i<n;i++) { b[i] = 2*a[i]; last = b[i]; }  printf(\"%d\\n\", last);  (1) Is the race gone? (2) What does the printf show? (3) What would OpenMP have to do at the end of the loop so it prints b[n-1]?",
       "answer": "(1) Yes: each thread writes only its own last. (2) Not b[n-1]. The copies are separate variables that vanish at the end of the loop and are never written back, and the spec says the original's value after the construct is unspecified: -1 or anything else, you cannot rely on it. (3) Copy out: after the loop, assign the original last the value it had in the sequentially last iteration (i = n-1), whichever thread ran it, not whichever thread finished last in time. That is lastprivate(last).",
       "key_points": [
-        "race gone: each thread has its own last|original never receives the copies: unspecified value, not b[n-1]|need copy-out at the end|from the sequentially last iteration (i = n-1), not the thread that finishes last in time -> lastprivate"
+        "race gone: each thread has its own last",
+        "original never receives the copies: unspecified value, not b[n-1]",
+        "need copy-out at the end",
+        "from the sequentially last iteration (i = n-1), not the thread that finishes last in time -> lastprivate"
       ],
       "options": [],
       "task": "",
@@ -579,10 +929,21 @@
         {
           "date": "2026-09-25",
           "q": 2,
-          "note": "said race remains ('which thread writes last'); -1 (missed 'unspecified'); guessed lastprivate but not 'sequentially last iteration'"
+          "note": "said race remains ('which thread writes last'); -1 (missed 'unspecified'); guessed lastprivate but not 'sequentially last iteration'",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": null
     },
     {
       "id": "cs7s1b",
@@ -611,10 +972,21 @@
         {
           "date": "2026-09-25",
           "q": 5,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c2547a",
@@ -624,8 +996,11 @@
       "question": "double scale = 2.0, tmp; int i, n = 100; double a[100], b[100];  #pragma omp parallel for default(none) ???  for (i = 0; i < n; i++) { tmp = scale * a[i]; b[i] = tmp + 1; }  Replace ??? with the clauses that make this compile and run correctly, and justify each variable (including i).",
       "answer": "private(tmp): scratch written by every iteration, so it needs one per thread (shared would race; its start value is never read, so private is enough). shared(a, b): a is only read; each iteration writes a different b[i], so no race on one array. shared(n, scale) (or firstprivate): only read, never written, so sharing is safe. i: no clause needed, because the loop variable of an omp for is automatically private, even under default(none). gcc accepts: default(none) shared(a, b, n, scale) private(tmp).",
       "key_points": [
-        "tmp private (written by every iteration)|a and b shared (b written at distinct indices",
-        "a only read)|n and scale shared or firstprivate (read-only)|i needs no clause: omp for loop variable is predetermined private"
+        "tmp private (written by every iteration)",
+        "a and b shared (b written at distinct indices",
+        "a only read)",
+        "n and scale shared or firstprivate (read-only)",
+        "i needs no clause: omp for loop variable is predetermined private"
       ],
       "options": [],
       "task": "",
@@ -639,10 +1014,21 @@
         {
           "date": "2026-09-25",
           "q": 3,
-          "note": "a,b,n shared ok, i ok; tmp lastprivate (works, unneeded); forgot scale -> would not compile; shared() syntax inferred, not taught explicitly"
+          "note": "a,b,n shared ok, i ok; tmp lastprivate (works, unneeded); forgot scale -> would not compile; shared() syntax inferred, not taught explicitly",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "c98zwz",
@@ -652,7 +1038,10 @@
       "question": "int *v = calloc(4, sizeof(int));  #pragma omp parallel num_threads(4) firstprivate(v) { v[omp_get_thread_num()] = 1; }  printf(\"%d %d %d %d\\n\", v[0], v[1], v[2], v[3]);  What prints, and does each thread get its own array? Why?",
       "answer": "1 1 1 1. firstprivate(v) gives each thread its own copy of the POINTER v, initialised with the original's value, which is the heap address from calloc. It does not copy the array. So all four private pointers hold the same address and lead to the one shared heap array: private pointer, shared pointee. Each thread writes a different element (its id), so there is no race, and the barrier at the end of the region means all writes are done before the printf.",
       "key_points": [
-        "prints 1 1 1 1|firstprivate copies the pointer's value (an address), not the array|all copies point to the one shared heap array (private pointer, shared pointee)|different elements per thread -> no race",
+        "prints 1 1 1 1",
+        "firstprivate copies the pointer's value (an address), not the array",
+        "all copies point to the one shared heap array (private pointer, shared pointee)",
+        "different elements per thread -> no race",
         "region-end barrier before printf"
       ],
       "options": [],
@@ -667,10 +1056,21 @@
         {
           "date": "2026-09-25",
           "q": 4,
-          "note": "1 1 1 1, private pointer/shared heap array right; didn't mention region-end barrier"
+          "note": "1 1 1 1, private pointer/shared heap array right; didn't mention region-end barrier",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     },
     {
       "id": "cimx09",
@@ -692,10 +1092,23 @@
         {
           "date": "2026-09-25",
           "q": 4,
-          "note": ""
+          "note": "",
+          "kind": "initial",
+          "valid": true,
+          "rubric_version": 1
         }
       ],
-      "suspended": false
+      "suspended": false,
+      "rubric_version": 1,
+      "key_history": [],
+      "check": "",
+      "kind": "concept",
+      "variants": [],
+      "asked": [],
+      "explanation": "",
+      "last_graduated": "2026-09-25"
     }
-  ]
+  ],
+  "rev": 21,
+  "applied_ops": []
 }
