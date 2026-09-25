@@ -5,6 +5,9 @@ If a topic is being probed, planned or taught and the state file has not
 been updated for longer than checkpointMinutes (learn.config.json), the hook
 blocks the stop once and asks the model to record a checkpoint first. The
 second stop passes (stop_hook_active), so this can never loop.
+
+A review session (log target inside reviewsDir) is exempt: srs.py grade
+saves each card as it goes, so a lesson checkpoint would add nothing.
 """
 from __future__ import annotations
 
@@ -12,6 +15,18 @@ import json
 import sys
 
 import learnlib as L
+
+
+def in_review(state: dict) -> bool:
+    """A review mirrors into reviewsDir; a lesson mirrors into its topic note."""
+    target = state.get("log_target")
+    if not target:
+        return False
+    try:
+        L.resolve(target).relative_to(L.dir_path("reviewsDir"))
+        return True
+    except ValueError:
+        return False
 
 
 def main() -> None:
@@ -30,6 +45,8 @@ def main() -> None:
         if began and (L.now() - began).total_seconds() / 60 < limit:
             return  # a lesson that just (re)started is not overdue, however old the state is
         state = L.load_state()
+        if in_review(state):
+            return  # every review grade is already saved to the deck; nothing to checkpoint
         slug = state.get("active_topic")
         if not slug or slug not in state["topics"]:
             return
