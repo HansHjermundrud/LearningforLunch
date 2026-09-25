@@ -3,8 +3,6 @@ tools/node_modules/
 
 # per-machine
 .claude/settings.local.json
-state/.cursors/
-state/.log/
 .viz-scratch/
 
 # python
@@ -15,9 +13,7 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# bounded byte-for-byte backups made before migrations/restores (git history holds the committed versions)
-state/backups/
-state/.journal.json
-state/.state.lock/
+# lesson state, deck and prepared material stay on this device (backups: state/backups/)
+state/
 exercises/**/.attempts/
 exercises/**/.validate*
