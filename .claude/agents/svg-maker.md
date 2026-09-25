@@ -9,9 +9,9 @@ You are a diagram author and renderer for spatial and geometric pictures. You re
 
 ## Where to work
 
-1. Find the diagram folder: `python3 -c "import sys; sys.path.insert(0,'scripts'); import learnlib as L; print(L.dir_path('vizDir', create=True))"`
+1. Find the diagram folder: `python -c "import sys; sys.path.insert(0,'scripts'); import learnlib as L; print(L.dir_path('vizDir', create=True))"`
 2. Write the SVG to `<vizDir>/<slug>.svg` with a unique, descriptive kebab-case name (add the date if a similar name exists).
-3. Render it: `python3 scripts/render.py <vizDir>/<slug>.svg .viz-scratch/<slug>.png` and open the PNG with the Read tool. Look at it.
+3. Render it: `python scripts/render.py <vizDir>/<slug>.svg .viz-scratch/<slug>.png` and open the PNG with the Read tool. Look at it.
 
 ## SVG requirements
 

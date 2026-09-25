@@ -11,14 +11,14 @@ Grades are 0-5 (SM-2 quality):
   2 wrong, but recognised the answer    1 wrong    0 blank / "I don't know"
 
 Usage (from the repo root):
-  python3 scripts/srs.py add --topic SLUG --type short --q "..." --a "..." [--points "k1;k2"] [--options "A|B|C"] [--task DIR] [--node ID]
-  python3 scripts/srs.py due [--topic SLUG] [--limit N] [--json]
-  python3 scripts/srs.py grade ID Q [--note "..."]
-  python3 scripts/srs.py stats [--json]
-  python3 scripts/srs.py list [--topic SLUG] [--all]
-  python3 scripts/srs.py show ID
-  python3 scripts/srs.py forecast [--days 14]
-  python3 scripts/srs.py suspend ID | unsuspend ID
+  python scripts/srs.py add --topic SLUG --type short --q "..." --a "..." [--points "k1;k2"] [--options "A|B|C"] [--task DIR] [--node ID]
+  python scripts/srs.py due [--topic SLUG] [--limit N] [--json]
+  python scripts/srs.py grade ID Q [--note "..."]
+  python scripts/srs.py stats [--json]
+  python scripts/srs.py list [--topic SLUG] [--all]
+  python scripts/srs.py show ID
+  python scripts/srs.py forecast [--days 14]
+  python scripts/srs.py suspend ID | unsuspend ID
 """
 from __future__ import annotations
 

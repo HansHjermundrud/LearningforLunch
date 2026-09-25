@@ -45,7 +45,7 @@ def main() -> None:
         reason = (
             f"Checkpoint overdue: {int(minutes)} min since the last state update for topic '{slug}'. "
             "Before ending the turn, record where the lesson stands: "
-            "`python3 scripts/state.py checkpoint \"<one line: what was just taught or asked, and the learner's result>\"`, "
+            "`python scripts/state.py checkpoint \"<one line: what was just taught or asked, and the learner's result>\"`, "
             "plus `node-done`, `node-shaky` or `next` if they apply. Then end the turn. "
             "Do not repeat lesson content to the learner."
         )

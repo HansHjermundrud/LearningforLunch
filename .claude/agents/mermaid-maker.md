@@ -12,7 +12,7 @@ You are a diagram author and renderer. You receive a brief describing ONE idea t
 Write your source to `.viz-scratch/<slug>.mmd` in the project root (create the folder if needed) and render with:
 
 ```
-python3 scripts/render.py .viz-scratch/<slug>.mmd .viz-scratch/<slug>.png
+python scripts/render.py .viz-scratch/<slug>.mmd .viz-scratch/<slug>.png
 ```
 
 Then open the PNG with the Read tool and actually look at it. Rendering success only proves the syntax parsed.

@@ -1,14 +1,21 @@
 {
   "model": "opus",
+  "env": {
+    "PYTHONIOENCODING": "utf-8",
+    "PYTHONUTF8": "1"
+  },
   "bashEditDiffEnabled": false,
   "tui": "fullscreen",
   "viewMode": "focus",
   "permissions": {
     "allow": [
+      "Bash(python scripts/*)",
+      "Bash(python \"$CLAUDE_PROJECT_DIR\"/scripts/*)",
       "Bash(python3 scripts/*)",
       "Bash(python3 \"$CLAUDE_PROJECT_DIR\"/scripts/*)",
       "Bash(bash exercises/*)",
       "Bash(bash scripts/*)",
+      "Bash(python -m unittest *)",
       "Bash(python3 -m unittest *)",
       "Bash(node --test *)",
       "Read",
@@ -24,7 +31,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hook_session_start.py\"",
+            "command": "python \"C:/Users/sjoen/Desktop/Learning-main/scripts/hook_session_start.py\"",
             "timeout": 20,
             "statusMessage": "Loading lesson state"
           }
@@ -36,13 +43,13 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/session_log.py\"",
+            "command": "python \"C:/Users/sjoen/Desktop/Learning-main/scripts/session_log.py\"",
             "timeout": 30,
             "statusMessage": "Mirroring lesson to the note"
           },
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hook_stop_checkpoint.py\"",
+            "command": "python \"C:/Users/sjoen/Desktop/Learning-main/scripts/hook_stop_checkpoint.py\"",
             "timeout": 10
           }
         ]
@@ -53,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$CLAUDE_PROJECT_DIR/scripts/hook_precompact.py\"",
+            "command": "python \"C:/Users/sjoen/Desktop/Learning-main/scripts/hook_precompact.py\"",
             "timeout": 10
           }
         ]

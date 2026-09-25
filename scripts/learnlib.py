@@ -2,7 +2,7 @@
 """Shared helpers for the learning system scripts.
 
 Everything here is standard library only, so the hooks work on any machine
-with python3. Paths come from learn.config.json at the repo root.
+with python (python3 on Unix). Paths come from learn.config.json at the repo root.
 """
 from __future__ import annotations
 
@@ -18,6 +18,18 @@ ROOT = pathlib.Path(
     os.environ.get("CLAUDE_PROJECT_DIR") or pathlib.Path(__file__).resolve().parent.parent
 ).resolve()
 CONFIG_PATH = ROOT / "learn.config.json"
+
+
+def _force_utf8() -> None:
+    """Windows consoles default to cp1252; every summary here is UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
+_force_utf8()
 
 DEFAULTS = {
     "notesDir": "notes",

@@ -31,7 +31,7 @@ the state file, the deck, and the lesson note in the vault.
 
 - A SessionStart hook injects today's date, the active topic, plan progress, NEXT and due reviews
   at startup, after `/clear`, and after every compaction. Trust it over your own recollection.
-- Checkpoint with `python3 scripts/state.py ...` after every taught node, every phase change and
+- Checkpoint with `python scripts/state.py ...` after every taught node, every phase change and
   whenever the learner's level or goal becomes clearer. A Stop hook blocks the turn once if a
   lesson has gone longer than `checkpointMinutes` without a state update.
 - After a compaction or in a new session, never re-teach finished nodes. Resume at NEXT.
@@ -64,5 +64,5 @@ ordinary software work; the teaching protocol applies only when the learner is l
 ## Working on the system itself
 
 When asked to change the system, work like an engineer: read the script you change, run it once
-(`python3 scripts/state.py show`, `python3 scripts/srs.py stats`), keep hooks non-blocking and
+(`python scripts/state.py show`, `python scripts/srs.py stats`), keep hooks non-blocking and
 exit 0 on error, and commit with a clear message.

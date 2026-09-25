@@ -7,23 +7,23 @@ state/state.json, rewrites state/progress.md (human-readable mirror) and
 prints a one-line confirmation.
 
 Usage (run from the repo root):
-  python3 scripts/state.py show
-  python3 scripts/state.py topics
-  python3 scripts/state.py start "Title" [--goal "..."] [--slug slug]
-  python3 scripts/state.py goal "what the learner actually wants"
-  python3 scripts/state.py edge "strand: floor=..., ceiling=..."
-  python3 scripts/state.py plan-set < plan.json      # {"nodes": [{"id","label","depends":[],"why":""}]}
-  python3 scripts/state.py plan-show [NODE]          # generated mermaid map (ids in labels); NODE = local view
-  python3 scripts/state.py plan-approve
-  python3 scripts/state.py node-add ID "label" [--depends a,b]
-  python3 scripts/state.py node-done ID "one-line summary" [--check short|mcq|code|none]
-  python3 scripts/state.py node-shaky ID "why it did not land"
-  python3 scripts/state.py next "the very next step"
-  python3 scripts/state.py checkpoint "what just happened"
-  python3 scripts/state.py pause
-  python3 scripts/state.py resume SLUG
-  python3 scripts/state.py finish [--summary "..."]
-  python3 scripts/state.py log-target PATH | --clear
+  python scripts/state.py show
+  python scripts/state.py topics
+  python scripts/state.py start "Title" [--goal "..."] [--slug slug]
+  python scripts/state.py goal "what the learner actually wants"
+  python scripts/state.py edge "strand: floor=..., ceiling=..."
+  python scripts/state.py plan-set < plan.json      # {"nodes": [{"id","label","depends":[],"why":""}]}
+  python scripts/state.py plan-show [NODE]          # generated mermaid map (ids in labels); NODE = local view
+  python scripts/state.py plan-approve
+  python scripts/state.py node-add ID "label" [--depends a,b]
+  python scripts/state.py node-done ID "one-line summary" [--check short|mcq|code|none]
+  python scripts/state.py node-shaky ID "why it did not land"
+  python scripts/state.py next "the very next step"
+  python scripts/state.py checkpoint "what just happened"
+  python scripts/state.py pause
+  python scripts/state.py resume SLUG
+  python scripts/state.py finish [--summary "..."]
+  python scripts/state.py log-target PATH | --clear
 """
 from __future__ import annotations
 
@@ -40,7 +40,7 @@ STATUSES = ("probing", "planning", "teaching", "paused", "finished")
 def _topic(state: dict, slug: str | None = None) -> tuple[str, dict]:
     slug = slug or state.get("active_topic")
     if not slug or slug not in state["topics"]:
-        sys.exit("error: no active topic. Run: python3 scripts/state.py start \"Title\"")
+        sys.exit("error: no active topic. Run: python scripts/state.py start \"Title\"")
     return slug, state["topics"][slug]
 
 
@@ -297,7 +297,7 @@ def cmd_start(args, state):
     previous = state.get("active_topic")
     if previous and previous in state["topics"] and state["topics"][previous]["status"] in ("probing", "planning", "teaching"):
         state["topics"][previous]["status"] = "paused"
-        _touch(state["topics"][previous], "pause", f"parked when '{slug}' started; resume with: python3 scripts/state.py resume {previous}")
+        _touch(state["topics"][previous], "pause", f"parked when '{slug}' started; resume with: python scripts/state.py resume {previous}")
     note = _new_note(args.title, slug)
     topic = {
         "title": args.title,
@@ -452,7 +452,7 @@ def cmd_pause(args, state):
     _touch(topic, "pause", "paused by learner")
     state["active_topic"] = None
     state["log_target"] = None
-    _save(state, f"Topic '{slug}' paused. Resume with: python3 scripts/state.py resume {slug}")
+    _save(state, f"Topic '{slug}' paused. Resume with: python scripts/state.py resume {slug}")
 
 
 def cmd_resume(args, state):

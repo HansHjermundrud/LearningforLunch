@@ -1,15 +1,27 @@
 #!/usr/bin/env bash
 # Smoke test for the learning system. Runs in a temp copy so real state is untouched.
 set -euo pipefail
+export PYTHONIOENCODING=utf-8
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/scripts"
 cp "$SRC"/scripts/*.py "$TMP/scripts/"
-cp "$SRC/learn.config.json" "$TMP/"
+# hermetic config: the smoke test must never write into the real vault
+cat > "$TMP/learn.config.json" <<'JSON'
+{"notesDir":"notes","vizDir":"notes/viz","reviewsDir":"notes/reviews",
+ "exercisesDir":"exercises","stateDir":"state","timezone":"Europe/Oslo","checkpointMinutes":12}
+JSON
 export CLAUDE_PROJECT_DIR="$TMP"
 cd "$TMP"
-S="python3 scripts/state.py"; R="python3 scripts/srs.py"; E="python3 scripts/exercise.py"
+pick_py() {
+  for c in python3 python py; do
+    if command -v "$c" >/dev/null 2>&1 && "$c" -c "import sys" >/dev/null 2>&1; then echo "$c"; return 0; fi
+  done
+  echo "no working python found" >&2; return 1
+}
+PY="${PY:-$(pick_py)}"
+S="$PY scripts/state.py"; R="$PY scripts/srs.py"; E="$PY scripts/exercise.py"
 
 echo "== state"
 $S show
@@ -26,7 +38,7 @@ $S checkpoint "midway"
 $S next "teach n3"
 $S show
 test -f state/progress.md && echo "progress.md ok"
-NOTE=$(python3 -c "import json;print(json.load(open('state/state.json'))['topics']['tcp-reliability']['note'])")
+NOTE=$("$PY" -c "import json;print(json.load(open('state/state.json'))['topics']['tcp-reliability']['note'])")
 test -f "$NOTE" && echo "note ok: $NOTE"
 
 echo "== srs"
@@ -60,41 +72,43 @@ EOF
 # build.jsonl: an ordinary coding session in the repo; mentions state.py only inside a Write, never as a lesson marker
 cat > build.jsonl <<'EOF'
 {"type":"user","isSidechain":false,"timestamp":"2026-09-24T10:00:00.000Z","message":{"role":"user","content":"Improve the scripts please"}}
-{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Editing state.py now."},{"type":"tool_use","id":"toolu_9","name":"Write","input":{"file_path":"x.md","content":"run python3 scripts/state.py start \"T\" then resume"}}]}}
+{"type":"assistant","isSidechain":false,"timestamp":"2026-09-24T10:00:05.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Editing state.py now."},{"type":"tool_use","id":"toolu_9","name":"Write","input":{"file_path":"x.md","content":"run "$PY" scripts/state.py start \"T\" then resume"}}]}}
 EOF
 
+# python must be able to open the transcripts: on Windows that means a native path
+TDIR="$(cygpath -m "$TMP" 2>/dev/null || echo "$TMP")"
 echo "== hooks"
-echo '{"source":"startup"}' | python3 scripts/hook_session_start.py | python3 -c "import sys,json;d=json.load(sys.stdin);print(d['hookSpecificOutput']['additionalContext'])"
-python3 - <<'EOF'
+echo '{"source":"startup"}' | "$PY" scripts/hook_session_start.py | "$PY" -c "import sys,json;d=json.load(sys.stdin);print(d['hookSpecificOutput']['additionalContext'])"
+"$PY" - <<'EOF'
 import json,datetime
 p='state/state.json'; s=json.load(open(p)); t=s['topics'][s['active_topic']]
 t['updated']=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=30)).isoformat()
 json.dump(s,open(p,'w'))
 EOF
-LESSON="{\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}"
-BUILD="{\"session_id\":\"t2\",\"transcript_path\":\"$TMP/build.jsonl\"}"
-if echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a lesson that just started"; exit 1; else echo "stop hook gives a fresh lesson session grace: ok"; fi
-python3 - <<'EOF'
+LESSON="{\"session_id\":\"t1\",\"transcript_path\":\"$TDIR/lesson.jsonl\"}"
+BUILD="{\"session_id\":\"t2\",\"transcript_path\":\"$TDIR/build.jsonl\"}"
+if echo "$LESSON" | "$PY" scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a lesson that just started"; exit 1; else echo "stop hook gives a fresh lesson session grace: ok"; fi
+"$PY" - <<'EOF'
 import json,datetime
 p='state/.cursors/t1.lesson'; d=json.load(open(p))
 d['found']=(datetime.datetime.now(datetime.timezone.utc)-datetime.timedelta(minutes=30)).isoformat()
 json.dump(d,open(p,'w'))
 EOF
-echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q '"block"' && echo "stop hook blocks when stale in a lesson session: ok"
-if echo "$BUILD" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a non-lesson session"; exit 1; else echo "stop hook ignores a non-lesson session: ok"; fi
-if echo "{\"stop_hook_active\":true,\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block on second stop"; exit 1; else echo "stop hook passes on second stop: ok"; fi
+echo "$LESSON" | "$PY" scripts/hook_stop_checkpoint.py | grep -q '"block"' && echo "stop hook blocks when stale in a lesson session: ok"
+if echo "$BUILD" | "$PY" scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: blocked a non-lesson session"; exit 1; else echo "stop hook ignores a non-lesson session: ok"; fi
+if echo "{\"stop_hook_active\":true,\"session_id\":\"t1\",\"transcript_path\":\"$TDIR/lesson.jsonl\"}" | "$PY" scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block on second stop"; exit 1; else echo "stop hook passes on second stop: ok"; fi
 $S checkpoint "fresh"
-if echo "$LESSON" | python3 scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block when fresh"; exit 1; else echo "stop hook passes when fresh: ok"; fi
-echo "{\"trigger\":\"auto\",\"session_id\":\"t1\",\"transcript_path\":\"$TMP/lesson.jsonl\"}" | python3 scripts/hook_precompact.py
+if echo "$LESSON" | "$PY" scripts/hook_stop_checkpoint.py | grep -q .; then echo "FAIL: should not block when fresh"; exit 1; else echo "stop hook passes when fresh: ok"; fi
+echo "{\"trigger\":\"auto\",\"session_id\":\"t1\",\"transcript_path\":\"$TDIR/lesson.jsonl\"}" | "$PY" scripts/hook_precompact.py
 test -f state/.cursors/t1.lesson && echo "lesson flag cached: ok"
 test ! -f state/.cursors/t2.lesson && echo "no flag for build session: ok"
 
 echo "== session log"
 before=$(wc -c < "$NOTE")
-echo "$BUILD" | python3 scripts/session_log.py
+echo "$BUILD" | "$PY" scripts/session_log.py
 test "$(wc -c < "$NOTE")" -eq "$before" && echo "build session not mirrored: ok" || { echo "FAIL: build session leaked into the note"; exit 1; }
-echo "$LESSON" | python3 scripts/session_log.py
-echo "$LESSON" | python3 scripts/session_log.py
+echo "$LESSON" | "$PY" scripts/session_log.py
+echo "$LESSON" | "$PY" scripts/session_log.py
 echo "--- note content:"; cat "$NOTE"
 n=$(grep -c "TEACHER" "$NOTE"); test "$n" -eq 2 && echo "teacher blocks: 2 ok" || { echo "FAIL teacher blocks $n"; exit 1; }
 grep -q "sidechain noise" "$NOTE" && { echo "FAIL sidechain logged"; exit 1; } || echo "sidechain skipped ok"

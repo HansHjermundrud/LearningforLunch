@@ -8,9 +8,9 @@ Each exercise is a folder under exercisesDir/<topic>/<name>/ with:
   check.sh         runs the tests; exit code 0 = pass
 
 Usage (from the repo root):
-  python3 scripts/exercise.py new --topic SLUG --name NAME --lang python|js|other [--title "..."]
-  python3 scripts/exercise.py check DIR
-  python3 scripts/exercise.py list
+  python scripts/exercise.py new --topic SLUG --name NAME --lang python|js|other [--title "..."]
+  python scripts/exercise.py check DIR
+  python scripts/exercise.py list
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ TEMPLATES = {
     "python": {
         "starter": ("solution.py", '"""Write your solution here. Keep the function name; the tests import it."""\n\n\ndef solve(*args, **kwargs):\n    raise NotImplementedError\n'),
         "test": ("test_solution.py", "import unittest\n\nfrom solution import solve\n\n\nclass TestSolution(unittest.TestCase):\n    def test_example(self):\n        # The teacher replaces this with real cases from the README.\n        self.assertEqual(solve(), None)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"),
-        "check": "#!/usr/bin/env bash\nset -u\ncd \"$(dirname \"$0\")\"\npython3 -m unittest -q test_solution.py\n",
+        "check": "#!/usr/bin/env bash\nset -u\ncd \"$(dirname \"$0\")\"\nfor c in python3 python py; do \"$c\" -c \"import sys\" >/dev/null 2>&1 && PY=\"$c\" && break; done\n[ -n \"${PY:-}\" ] || { echo \"no working python found\"; exit 1; }\n\"$PY\" -m unittest -q test_solution.py\n",
     },
     "js": {
         "starter": ("solution.js", "// Write your solution here. Keep the export name; the tests import it.\n\nfunction solve() {\n  throw new Error('not implemented');\n}\n\nmodule.exports = { solve };\n"),
