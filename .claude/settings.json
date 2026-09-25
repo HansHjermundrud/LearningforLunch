@@ -2,7 +2,6 @@
   "model": "opus",
   "bashEditDiffEnabled": false,
   "tui": "fullscreen",
-  "viewMode": "focus",
   "permissions": {
     "allow": [
       "Bash(python3 scripts/*)",
