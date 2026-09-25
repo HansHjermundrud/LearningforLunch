@@ -8,6 +8,10 @@ second stop passes (stop_hook_active), so this can never loop. In the normal
 teaching loop `ask` and `record` update the state on every answer turn, so
 this only fires during long stretches without a question.
 
+Only a live lesson counts: once LESSON_IDLE_PROMPTS learner prompts have passed
+without a lesson command (ask, record, prep-show, ...; checkpoint excluded), the
+session has moved on to other work and the hook stays silent.
+
 A review session (log target inside reviewsDir) is exempt: srs.py grade
 saves each card as it goes. A corrupt state file is reported, not "fixed".
 """
@@ -40,6 +44,9 @@ def main() -> None:
     try:
         lesson = L.lesson_session(payload.get("transcript_path"), payload.get("session_id", ""))
         if not lesson:
+            return
+        idle = L.prompts_since_lesson_activity(payload.get("transcript_path"), lesson.get("offset", 0))
+        if idle is not None and idle > L.LESSON_IDLE_PROMPTS:
             return
         limit = float(L.config().get("checkpointMinutes", 12))
         began = L.parse_ts(lesson.get("found"))

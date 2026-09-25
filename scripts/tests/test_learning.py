@@ -783,6 +783,45 @@ class TestLessonDetection(Base):
         self.assertFalse(self.detect('git commit -m "teach loop: python3 scripts/state.py start, ask, record"'))
         self.assertFalse(self.detect("echo 'python3 scripts/state.py resume x'"))
 
+    def idle(self, entries):
+        path = self.root / "t.jsonl"
+        path.write_text("".join(json.dumps(e) + "\n" for e in entries), "utf-8")
+        res = self.py(f"""
+            import learnlib as L
+            print(L.prompts_since_lesson_activity({str(path)!r}))
+        """)
+        return res.stdout.strip()
+
+    def test_lesson_goes_idle_after_other_work(self):
+        def prompt(text):
+            return {"type": "user", "message": {"role": "user", "content": text}}
+        hook = {"type": "user", "isMeta": True, "message": {"role": "user", "content": "Stop hook feedback: ..."}}
+        result = {"type": "user", "message": {"role": "user", "content": [{"type": "tool_result", "tool_use_id": "t", "content": "ok"}]}}
+        lesson = [prompt("continue"), self.entry("python3 scripts/state.py ask n7"), result, prompt("my answer"),
+                  self.entry("python3 scripts/state.py record <<'EOF'\n{}\nEOF"), result]
+        self.assertEqual(self.idle(lesson), "0")
+        after = lesson + [prompt("stop"), self.entry('python3 scripts/state.py checkpoint "x"'), result, hook, prompt("commit that")]
+        self.assertEqual(self.idle(after), "2", "checkpoint, tool results and hook feedback do not count")
+        self.assertEqual(self.idle(after + [prompt("anything more?")]), "3")
+        self.assertEqual(self.idle(after + [prompt("<command-name>/teach</command-name>")]), "0")
+        self.assertEqual(self.idle([prompt("hello")]), "None")
+
+    def test_stop_hook_silent_once_lesson_is_idle(self):
+        self.start_lesson()
+        (self.root / "state" / ".cursors").mkdir(parents=True, exist_ok=True)
+        (self.root / "state" / ".cursors" / "s.lesson").write_text('{"offset": 0, "found": "2000-01-01T00:00:00+00:00"}', "utf-8")
+        state = json.loads((self.root / "state" / "state.json").read_text("utf-8"))
+        state["topics"][state["active_topic"]]["updated"] = "2000-01-01T00:00:00+00:00"
+        (self.root / "state" / "state.json").write_text(json.dumps(state), "utf-8")
+        path = self.root / "t.jsonl"
+        base = [self.entry("python3 scripts/state.py ask n1"), {"type": "user", "message": {"content": "answer"}}]
+
+        def stop(entries):
+            path.write_text("".join(json.dumps(e) + "\n" for e in entries), "utf-8")
+            return self.cmd("hook_stop_checkpoint.py", stdin=json.dumps({"session_id": "s", "transcript_path": str(path)})).stdout
+        self.assertIn("block", stop(base))
+        self.assertEqual(stop(base + [{"type": "user", "message": {"content": p}} for p in ("a", "b", "c")]).strip(), "")
+
 
 class TestHooks(Base):
     def test_session_start_is_compact_and_shows_pending(self):

@@ -979,6 +979,70 @@ def lesson_session(transcript_path, session_id: str) -> dict | None:
     return None
 
 
+# Lesson work in progress: a state command a lesson turn runs (not `checkpoint`, which the
+# Stop hook itself asks for and must not keep a finished lesson alive).
+_ACTIVITY_CMD = re.compile(r"scripts/state\.py\s+(start|resume|log-target|ask|record|hint|pending|answer|prep-show|next-node)\b")
+LESSON_IDLE_PROMPTS = 2
+
+
+def _is_prompt(entry: dict) -> bool:
+    """A message the learner typed (not a tool result, skill body, hook feedback or summary)."""
+    if entry.get("type") != "user" or entry.get("isSidechain") or entry.get("isMeta") or entry.get("isCompactSummary"):
+        return False
+    content = (entry.get("message") or {}).get("content")
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, list):
+        blocks = [b for b in content if isinstance(b, dict)]
+        return any(b.get("type") == "text" for b in blocks) and not any(b.get("type") == "tool_result" for b in blocks)
+    return False
+
+
+def _entry_is_lesson_activity(entry: dict) -> bool:
+    if entry.get("isSidechain"):
+        return False
+    if entry.get("type") == "user":
+        return _entry_marks_lesson(entry)
+    content = (entry.get("message") or {}).get("content")
+    if entry.get("type") == "assistant" and isinstance(content, list):
+        for block in content:
+            if not isinstance(block, dict) or block.get("type") != "tool_use":
+                continue
+            inp = block.get("input") or {}
+            if block.get("name") == "Skill" and str(inp.get("skill", "")).split(":")[-1] in LESSON_SKILLS:
+                return True
+            if block.get("name") == "Bash" and _ACTIVITY_CMD.search(_invoked_text(str(inp.get("command", "")))):
+                return True
+    return False
+
+
+def prompts_since_lesson_activity(transcript_path, offset: int = 0) -> int | None:
+    """How many learner prompts ago the last lesson activity happened (0 = in the current
+    turn). A session that moved on from the lesson to other work (committing, editing the
+    system) stops counting as a live lesson after LESSON_IDLE_PROMPTS prompts, so the
+    checkpoint hook leaves it alone. None when the transcript cannot be read."""
+    if not transcript_path:
+        return None
+    transcript = pathlib.Path(transcript_path)
+    if not transcript.exists():
+        return None
+    count = None
+    with open(transcript, "rb") as handle:
+        handle.seek(max(0, int(offset or 0)))
+        for raw in handle:
+            if b'"user"' not in raw and b"state.py" not in raw and b'"Skill"' not in raw:
+                continue
+            try:
+                entry = json.loads(raw)
+            except Exception:  # noqa: BLE001
+                continue
+            if count is not None and _is_prompt(entry):
+                count += 1
+            if _entry_is_lesson_activity(entry):
+                count = 0
+    return count
+
+
 def hook_log(message: str) -> None:
     """Best-effort diagnostics for hooks (never raises)."""
     try:

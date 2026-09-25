@@ -35,7 +35,7 @@ Paths for notes, diagrams and reviews come from `learn.config.json`. Never hard-
 The chat context is disposable. The lesson lives in the state file, the deck, the prepared material and the lesson note.
 
 - A SessionStart hook injects today's date, the active topic, plan progress, the PENDING interaction and NEXT at startup, after `/clear`, and after every compaction. Trust it over your own recollection. If a pending interaction is shown, `python3 scripts/state.py pending` first: an unanswered question is re-shown, a recorded answer is graded, never replaced with a new question.
-- `ask` and `record` save state on every answer turn. Between questions, `checkpoint "..."` when something important happened. A Stop hook blocks the turn once if a lesson has gone `checkpointMinutes` without a state update.
+- `ask` and `record` save state on every answer turn. Between questions, `checkpoint "..."` when something important happened. A Stop hook blocks the turn once if a live lesson has gone `checkpointMinutes` without a state update; after two learner prompts with no lesson command (checkpoint does not count) the session counts as other work and the hook stays silent.
 - Never re-teach covered nodes. Resume at NEXT. A node covered before evidence was recorded (readiness `unknown`) gets a just-in-time check only when the next node builds on it.
 - Keep the context small: subagents do the heavy reading during preparation, tool output stays short, never paste whole files or long web pages into the chat. One node per teaching message.
 - A Stop hook mirrors your prose and every question and answer into the lesson note automatically. Write for the note.
