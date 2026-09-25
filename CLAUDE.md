@@ -48,6 +48,11 @@ Lesson notes, cards, exercises and reviews all carry dates; never invent one.
 ## Questions
 
 - `AskUserQuestion` is the multiple-choice tool. It cannot grade, so you grade in the next message.
+- Code never goes inside `AskUserQuestion` or inline backticks: it renders squashed onto one line.
+  Any question (MCQ, short or review card) that shows code puts it in a fenced ```` ```c ```` block in
+  plain chat, one statement per line, indented, pragmas on their own lines. If it is multiple choice,
+  list the options below it as A), B), C) ... with "I don't know" last and end the turn. The learner
+  answers with a letter. Stored cards often hold code on one line, so reformat it before you ask.
   Always add "I don't know" as the last option of a gradable question.
 - Short-answer questions are asked in plain chat; you end the turn and wait. Commit the model
   answer to the deck with `srs.py add` before asking, then grade 0-5 with `srs.py grade`.

@@ -41,7 +41,7 @@ Socratic or expository, per stretch and per the learner's energy: Socratic (pose
 
 | Need | Use |
 |---|---|
-| Multiple-choice question, graded or not | `AskUserQuestion`, exactly ONE question per call (several questions in one call caused accidental submits). It cannot grade, so you grade in the next message. Add "I don't know" as the last option of every gradable question. Never put the answer in an option description. |
+| Multiple-choice question, graded or not | `AskUserQuestion`, exactly ONE question per call (several questions in one call caused accidental submits). It cannot grade, so you grade in the next message. Add "I don't know" as the last option of every gradable question. Never put the answer in an option description. **If the question shows code, do not use `AskUserQuestion`**: it squashes code onto one line. Put the code in a fenced ```` ```c ```` block in plain chat (one statement per line, pragmas on their own lines), list options as A), B), C) ... plus "I don't know", and end the turn. |
 | Short-answer question | Ask in plain chat and end the turn. First commit the model answer: `python3 scripts/srs.py add --type short ...` (prints the card id). After the reply, grade 0-5, explain, then `python3 scripts/srs.py grade <id> <q>`. |
 | Coding task | The `code-task` skill. |
 | Verify a fact, scope a topic | The `researcher` subagent via the Agent tool. Give it the full question; it has no memory of the lesson. |

@@ -18,7 +18,8 @@ Reviews are separate from lessons. They do not teach new material; they test rec
 ## For each card, one at a time
 
 - **short**: ask the question in plain chat, end the turn, wait. Grade the reply 0-5 against the stored answer and key points (5 complete and precise, 4 small gap, 3 core present but a key point missing, 2 wrong but recognised, 1 wrong, 0 blank or "I don't know"). Give the model answer and what was missing. Then `python3 scripts/srs.py grade <id> <q>`.
-- **mcq**: ask with `AskUserQuestion` using the stored options in a shuffled order plus "I don't know" last. Grade: 5 if right, 2 if wrong, 0 for "I don't know". Explain briefly. Then grade the card.
+- **mcq**: ask with `AskUserQuestion` using the stored options in a shuffled order plus "I don't know" last. Grade: 5 if right, 2 if wrong, 0 for "I don't know". Explain briefly. Then grade the card. **If the card contains code**, skip `AskUserQuestion` (it renders code on one line): show the code as a fenced ```` ```c ```` block in plain chat, reformatted to one statement per line with pragmas on their own lines, list the options as A), B), C) ... with "I don't know" last, and end the turn.
+- For any card type, code in the question is always shown as a fenced, properly line-broken block, never inline.
 - **code**: show the task summary and the exercise folder from the card. Ask the learner to solve it again in a fresh file inside that folder (for example `retry-<today>.py`) or to describe the approach if time is short. When they say done, run `bash <folder>/check.sh` adapted to the retry file, or review the description. Grade 0-5 and record it.
 
 Never reveal the answer before the learner has answered or explicitly given up. If a wrong answer exposes a misconception, note it in one sentence and append a dated line to `LEARNER.md` under "Standing notes" if it is likely to recur.
