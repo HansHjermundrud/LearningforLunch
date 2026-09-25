@@ -1,32 +1,29 @@
 # Learning for Lunch
 
-Developed, configured and tested by:
+**A personal AI tutor inside Claude Code, combining structured lessons, rubric-based assessment, coding practice, and spaced repetition.**
 
-**Main author: Hans Hjermundrud**
-
-**Co-author: Sebastian Sjøen-Tollaksvik**
-
-**A personal AI tutor for Claude Code, with structured lessons, rubric-based assessment, and spaced repetition.**
-
-Learning turns a Claude Code session into a persistent learning workspace. It combines guided instruction, short-answer checks, practical coding exercises, and scheduled reviews, while keeping lesson notes and progress outside the conversation so you can pick up where you left off.
+Learning for Lunch turns a Claude Code session into a persistent learning workspace. The tutor assesses your starting point, builds a plan around your goal, checks your understanding, and schedules future reviews. Lesson progress and notes are stored outside the conversation to support continuity across sessions.
 
 ## Features
 
-- **Personalized lessons** — Assess your starting level, define a learning goal, and follow a plan organized by concept dependencies.
-- **Rubric-based assessment** — Explain concepts in your own words and receive feedback against a committed grading rubric.
-- **Spaced repetition** — Turn checked concepts into review cards scheduled with the SM-2 algorithm.
-- **Coding practice** — Apply programming concepts through exercises stored in `exercises/`.
-- **Persistent learning state** — Preserve lesson progress and checkpoints across sessions and long conversations.
-- **Obsidian notes** — Mirror both sides of the lesson into dated notes, with inline Mermaid diagrams and SVG assets.
+- **Personalized lesson plans** — Probe your level, clarify your goal, and organize concepts in a dependency graph.
+- **Short-answer assessment** — Explain ideas in your own words. The tutor stores a model answer and key points before asking, then grades your response on a 0–5 scale.
+- **Spaced repetition** — Review checked concepts using an SM-2 scheduling implementation.
+- **Practical coding exercises** — Apply programming concepts through tasks, starter files, and tests under `exercises/`.
+- **Persistent lesson state** — Store the active topic, plan, progress, and next step in files that can be loaded into later sessions.
+- **Obsidian integration** — Mirror lesson exchanges into dated Markdown notes with Mermaid diagrams and SVG assets.
+- **Research and diagram agents** — Delegate topic research and visual verification to specialized Claude Code subagents.
 
-## How it works
+## How a lesson works
 
-1. **Start a session.** Run `claude` from the project directory. A `SessionStart` hook provides the current date, active topic, and due reviews.
-2. **Choose a topic.** Run `/teach <topic>`. The tutor uses quick multiple-choice questions to assess your level, clarifies your goal, researches the topic, and proposes a dependency graph for the lesson.
-3. **Approve the plan.** Once you approve it, each concept follows a **motivate → establish → connect → check** teaching loop.
-4. **Demonstrate understanding.** Key prerequisite concepts and the end of each topic require short answers in your own words. Programming topics also include coding tasks.
-5. **Capture the lesson.** Your responses and the tutor's explanations are mirrored into a dated note. Diagrams are saved alongside the material.
-6. **Review and resume.** Each checked concept becomes a review card. Use `/review` for due cards, `/status` to inspect progress, and `/checkpoint` to save your place.
+1. **Start Claude Code.** Run `claude` from the project directory. A `SessionStart` hook injects the current date, active topic, lesson progress, and due reviews.
+2. **Choose a topic.** Run `/teach <topic>`. The tutor uses quick multiple-choice questions to assess your level and asks what you want to achieve.
+3. **Approve a plan.** The tutor researches the topic and proposes a dependency graph. Teaching begins after you approve it.
+4. **Work through each concept.** Each node follows a **motivate → establish → connect → check** loop. Key concepts require short answers; programming topics include coding tasks.
+5. **Record progress.** Scripts save checkpoints and the next step. A Stop hook mirrors lesson exchanges into the configured note.
+6. **Review and continue.** Checked concepts become review cards. Use `/review` for due cards, `/status` for progress, and `/teach continue` to pick up the lesson.
+
+The tutor performs the assessment; the Python scripts store results and calculate review dates.
 
 ## Getting started
 
@@ -34,10 +31,13 @@ Learning turns a Claude Code session into a persistent learning workspace. It co
 
 - Claude Code
 - Python 3
-- Node.js 18 or later and npm
-- Chrome or Chromium available on `PATH` for diagram verification
-- Optional: `rsvg-convert`, provided by the `librsvg2-bin` package
-- Optional: an Obsidian vault for lesson notes
+- **Node.js 22.12 or later** and npm, matching the requirements of Puppeteer in the committed dependency lockfile
+- Chrome or Chromium available on `PATH`, or configured through `CHROME_PATH`
+- Bash for the setup examples and exercise runners
+- Optional: Obsidian for viewing lesson notes
+- Optional: `rsvg-convert` from `librsvg2-bin` for SVG rendering
+
+The commands below use a Bash shell, such as one available on Linux, macOS, or Windows through WSL.
 
 ### 1. Clone the repository
 
@@ -52,15 +52,33 @@ cd ~/learning
 
 ```bash
 cd tools
-PUPPETEER_SKIP_DOWNLOAD=1 npm install
+PUPPETEER_SKIP_DOWNLOAD=1 npm ci
 cd ..
 ```
 
-The Mermaid renderer uses your system Chrome or Chromium installation.
+This installs the locked dependencies without downloading Puppeteer's bundled browser. Rendering uses your system Chrome or Chromium installation.
 
-### 3. Configure note storage
+### 3. Configure your folders
 
-To use Obsidian, update the following fields in `learn.config.json` to point to your vault. For example, when accessing a Windows vault from WSL:
+Set the folders in `learn.config.json` to match your workspace or Obsidian vault.
+
+For a local setup, use:
+
+```json
+{
+  "notesDir": "notes",
+  "vizDir": "notes/viz",
+  "reviewsDir": "notes/reviews",
+  "exercisesDir": "exercises",
+  "stateDir": "state",
+  "timezone": "",
+  "checkpointMinutes": 12
+}
+```
+
+Relative paths resolve from the project root. An empty `timezone` uses local system time; you can also supply a time zone such as `Europe/Oslo`.
+
+For Obsidian, change the three note paths to folders inside your vault. For example, when accessing a Windows vault from WSL:
 
 ```json
 {
@@ -70,17 +88,19 @@ To use Obsidian, update the following fields in `learn.config.json` to point to 
 }
 ```
 
-Without a configured vault, `notes/` serves as the default note directory.
+These are the three fields to update in the full configuration. Keep `stateDir` and `exercisesDir` inside the repository.
 
 ### 4. Set up your learner profile
 
-Edit `LEARNER.md` with your background, goals, and learning preferences, then launch Claude Code from the project root:
+Edit `LEARNER.md` with your background, current goals, preferred programming languages, and learning preferences.
+
+Then launch Claude Code from the project root:
 
 ```bash
 claude
 ```
 
-Start your first lesson with a topic of your choice:
+Start a lesson with a topic of your choice:
 
 ```text
 /teach Python decorators
@@ -88,51 +108,81 @@ Start your first lesson with a topic of your choice:
 
 ## Commands
 
-Run these commands inside Claude Code:
-
 | Command | Purpose |
 | --- | --- |
-| `/teach <topic>` | Start a lesson on a new topic. |
-| `/teach continue` | Resume the active lesson. |
+| `/teach <topic>` | Start a lesson. |
+| `/teach continue` | Continue the previous lesson. |
 | `/review [topic] [--limit N]` | Review due cards, optionally filtered by topic and limited in number. |
 | `/code-task` | Create or check a coding exercise. |
-| `/visualize <idea>` | Add a verified diagram. |
-| `/status` | Show learning progress and due reviews. |
-| `/checkpoint [note]` | Save the current state with an optional note. |
+| `/visualize <idea>` | Create a diagram through the render-and-inspect workflow. |
+| `/status` | Show progress and due reviews. |
+| `/checkpoint [note]` | Save the current lesson state. |
 
-### Standalone scripts
-
-You can also inspect state, reviews, and exercises directly from the terminal:
+You can also inspect the underlying data from the terminal:
 
 ```bash
 python3 scripts/state.py show
+python3 scripts/state.py topics
 python3 scripts/srs.py stats
 python3 scripts/srs.py forecast
 python3 scripts/exercise.py list
 ```
 
-## Project structure
+To resume a specific paused topic directly:
+
+```bash
+python3 scripts/state.py resume <topic-slug>
+```
+
+## Architecture
+
+Claude Code provides the teaching interface. Skills define the lesson and assessment workflows, while Python scripts handle persistence, scheduling, and exercise execution.
+
+| Component | Responsibility |
+| --- | --- |
+| Tutor and skills | Probe knowledge, plan lessons, teach concepts, assess answers, and provide feedback. |
+| Research and diagram agents | Research topics and create visually verified diagrams. |
+| State scripts | Record topics, dependency plans, checkpoints, and the next teaching step. |
+| Review scheduler | Store cards and apply SM-2 scheduling to recorded grades. |
+| Hooks | Inject session context, mirror transcripts, and prompt overdue checkpoints. |
+| Markdown notes | Provide a readable lesson record, including explanations, questions, and diagrams. |
+
+### Project structure
 
 | Path | Purpose |
 | --- | --- |
-| `.claude/settings.json` | Session model, permissions, and `SessionStart`, `Stop`, and `PreCompact` hooks. |
-| `.claude/skills/` | Workflows for teaching, reviews, coding tasks, visualization, status, and checkpoints. |
-| `.claude/agents/` | Researcher, Mermaid, and SVG subagent definitions. |
-| `scripts/` | State management, review scheduling, exercise tooling, rendering, and hooks. |
-| `state/` | Persistent state in `state.json`, review cards in `deck.json`, and progress in `progress.md`. |
-| `notes/` | Default lesson notes when no vault is configured. |
-| `exercises/` | Coding tasks. |
-| `tools/` | Mermaid CLI dependencies; `node_modules/` is excluded from version control. |
-| `learn.config.json` | Note, diagram, and review folder configuration. |
+| `.claude/settings.json` | Session model, permissions, and hook configuration. |
+| `.claude/skills/` | Teaching, review, coding, visualization, status, and checkpoint workflows. |
+| `.claude/agents/` | Researcher, Mermaid, and SVG agent definitions. |
+| `scripts/state.py` | Topic, plan, progress, and checkpoint management. |
+| `scripts/srs.py` | Review cards and scheduling. |
+| `scripts/exercise.py` | Exercise scaffolding and test execution. |
+| `scripts/session_log.py` | Transcript mirroring into lesson notes. |
+| `scripts/render.py` | Mermaid and SVG rendering for visual inspection. |
+| `scripts/learnlib.py` | Shared configuration, path, date, and persistence helpers. |
+| `scripts/selftest.sh` | Smoke test for the core workflows. |
+| `state/` | Lesson state, review deck, and readable progress summary. |
+| `notes/` | Local note storage when configured with relative paths. |
+| `exercises/` | Coding tasks, starter files, and tests. |
+| `tools/` | Mermaid CLI dependencies and npm lockfile. |
+| `learn.config.json` | Folder paths, time zone, and checkpoint interval. |
 | `LEARNER.md` | Learner profile and preferences. |
-| `CLAUDE.md` | Tutor instructions loaded every session. |
+| `CLAUDE.md` | Tutor instructions loaded each session. |
 
 ## Model configuration
 
-The tutor uses the session model configured in `.claude/settings.json`:
+The session model is configured in `.claude/settings.json`:
 
 ```json
 "model": "opus"
 ```
 
-Use `/model` inside Claude Code to override it for the current session. Subagent models are configured separately through the `model:` field in each definition under `.claude/agents/`.
+Use `/model` inside Claude Code to change it for the current session. Subagent models are configured separately through the `model:` field in their files under `.claude/agents/`.
+
+## Authors and acknowledgments
+
+- **Main author:** Hans Hjermundrud
+- **Co-author:** Sebastian Sjøen-Tollaksvik
+
+As recorded in `CLAUDE.md`, this project is a port and extension of `amosblomqvist/learn`.
+
