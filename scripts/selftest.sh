@@ -35,6 +35,13 @@ $S prep-node n1 <<'PREP'
 {"objective":"explain that all transfer is packets","checks":[{"id":"q1","type":"short","variants":[{"id":"v1","question":"Why can bytes arrive out of order?","answer":"different packets, different paths","required":["different packets"]}],"hints":["what does the network forward?"]}],"status":"ready"}
 PREP
 $S prep-status
+echo "== documents"
+mkdir -p resources && printf '%%PDF-1.4\n<< /Type /Page >>\n%%%%EOF\n' > resources/notes.pdf
+$S source-add resources/notes.pdf --id notes --role supplementary --pages 1
+$S source-digest notes <<'DIGEST'
+{"summary":"tiny notes","sections":[{"id":"s1","title":"Packets","pages":"1","nodes":["n1"]}],"node_map":[{"node":"n1","pages":"1","focus":"packets"}]}
+DIGEST
+$S source-show --node n1 | grep -q "pages 1" && echo "document digest by node: ok" || { echo "FAIL document digest"; exit 1; }
 $S ask n1
 $S pending
 $S answer "they were separate packets"

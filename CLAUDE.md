@@ -12,13 +12,14 @@ amosblomqvist/learn. Read this file fully; it is short and every rule matters.
 | `.claude/skills/code-task/` | Creating, validating, checking and grading coding exercises. |
 | `.claude/skills/visualize/` | Adding one verified diagram to a lesson. |
 | `.claude/skills/status/`, `checkpoint/` | Show progress; save state between questions. |
-| `.claude/agents/` | `researcher`, `mermaid-maker`, `svg-maker` subagents. |
+| `.claude/agents/` | `researcher`, `document-reader`, `mermaid-maker`, `svg-maker` subagents. |
 | `scripts/state.py` | Lesson state: topics, plan, node evidence, prepared material, pending interaction, attempts. |
 | `scripts/srs.py` | The spaced-repetition deck (SM-2 with fixed evidence rules). |
 | `scripts/exercise.py` | Coding exercise folders (python, js, c/OpenMP), retry files, validation, test runner. |
 | `scripts/render.py` | Renders mermaid or SVG to PNG so a maker can look at it. |
 | `state/state.json`, `state/deck.json`, `state/prep/`, `state/progress.md` | Machine state, prepared material, readable mirror. |
 | `docs/SYSTEM.md` | Data semantics, commands, migration and restore, what runs during preparation versus teaching. |
+| `resources/` | PDFs and other documents the learner supplies (local only, gitignored). Registered with `source-add`, digested once by `document-reader`; see the teach skill's "Documents". |
 | `notes/` (or the vault folder set in `learn.config.json`) | Lesson notes, reviews and SVG diagrams the learner reads in Obsidian. |
 | `exercises/` | Coding tasks. |
 | `LEARNER.md` | The learner's profile and preferences. Read it before teaching. |

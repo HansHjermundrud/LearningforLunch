@@ -5,6 +5,7 @@
   "reviewsDir": "/mnt/c/Users/hansh/OneDrive/Master/Learning/reviews",
   "exercisesDir": "exercises",
   "stateDir": "state",
+  "resourcesDir": "resources",
   "timezone": "Europe/Oslo",
   "checkpointMinutes": 12
 }

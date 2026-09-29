@@ -9,6 +9,7 @@ scripts guarantee. Everything is standard-library Python 3.
 | Stage | What runs | Cost |
 |---|---|---|
 | Planning a topic | Researcher in 1-2 batched calls; `prep-topic`; `plan-set`; `prep-node` for the upcoming chunk; `exercise.py new` + `validate`; `state.py validate` | Heavy, once; extended at chunk boundaries |
+| A learner-supplied document | `source-add` (hash, page count); `document-reader` subagent reads the requested pages once and writes a digest; `source-digest`; flagged conflicts to the researcher; plan adjusted with `node-add`/`node-edit`/`scope` | Heavy, once per document version |
 | Teaching a prepared node | `prep-show` (read), teach, `ask`, wait | No research, no subagent, no diagram, no map |
 | An answer turn | `record < result.json` | One local command: attempt + readiness + card + NEXT |
 | Recovery after compaction or restart | SessionStart hook injects a ~12-line snapshot; `pending` shows the open question | No transcript reading, no card dump |
@@ -21,6 +22,8 @@ scripts guarantee. Everything is standard-library Python 3.
 | `state/state.json` | Topics: goal, edge, plan nodes with evidence fields, attempts, the pending interaction, topic-level preparation, log. Schema version 2. |
 | `state/deck.json` | Review cards (SM-2 fields, history, variants, key versions). Schema version 2. |
 | `state/prep/<topic>/<node>.json` | Prepared material per node (objective, outline, claims, misconceptions, checks with keys and hints, exercise spec). |
+| `state/prep/<topic>/sources/<id>.json` | Digest of a local document: summary, objectives, sections with pages and depth, assumed prerequisites, node map, flagged conflicts; the file hash it was made from. |
+| `resources/` | The documents themselves (`resourcesDir`). Gitignored except its README. |
 | `state/progress.md` | Human-readable mirror of the state, rewritten on every save. |
 | `state/backups/*.bak` | Byte-for-byte copies made before a migration, before a restore and by `state.py backup`. The newest 10 per file are kept (`backupsKeep`). |
 | `state/.journal.json` | Exists only while a multi-file commit is in flight (see Durability). |
@@ -113,7 +116,7 @@ Restore: `python3 scripts/state.py restore --list`, then `restore state/backups/
 
 ## Commands
 
-`state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `ask`, `pending`, `answer`, `hint`, `record`.
+`state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `node-edit`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `correction`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `source-add`, `source-digest`, `source-show`, `ask`, `pending`, `answer`, `hint`, `record`.
 
 `srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `amend-key`, `invalidate-key`.
 
@@ -134,9 +137,11 @@ Only `result` is required. Omitted `required_*` are inferred from the result; om
 
 ### Prep file shapes
 
-Topic (`prep-topic`): `capability`, `environment`, `chunks [{id,label,nodes}]`, `exit_criteria [{id,text,nodes,checks}]`, `sources [{id,url,title,section,verified}]`.
+Topic (`prep-topic`): `capability`, `environment`, `chunks [{id,label,nodes}]`, `exit_criteria [{id,text,nodes,checks}]`, `sources [{id,url,title,section,verified}]`. Documents registered with `source-add` are entries `{id, kind: "document", path, role: primary|supplementary, title, pages, page_count, sha256, bytes, added, digested, digest_sha256}`; a later `prep-topic` keeps them even if its `sources` omits them.
 
-Node (`prep-node`): `objective`, `why_needed`, `prerequisites`, `motivation`, `outline []`, `claims [{id,kind,text,scope,boundary,sources}]`, `misconceptions [{id,text,repair}]`, `checks [{id,type,role,load_bearing,review,kind,variants [{id,question,code,options,answer,required,accepted,disqualifying,rubric_version}],hints [3],exercise}]`, `code_exercise`, `review_suitability`, `status draft|ready`, `verified`.
+Node (`prep-node`): `objective`, `why_needed`, `prerequisites`, `motivation`, `outline []`, `claims [{id,kind,text,scope,boundary,sources}]`, `misconceptions [{id,text,repair}]`, `checks [{id,type,role,load_bearing,review,kind,variants [{id,question,code,options,answer,required,accepted,disqualifying,rubric_version}],hints [3],exercise}]`, `code_exercise`, `review_suitability`, `status draft|ready`, `verified`, optional `source_refs [{source,pages,note}]`. A claim's `sources` may carry a locator: `"notes:p14"`.
+
+Digest (`source-digest ID`, written by the `document-reader` subagent): `summary` (required), `scope_role`, `objectives []`, `sections [{id,title,pages,depth,concepts,notation,exercises,nodes}]`, `prerequisites_outside []`, `node_map [{node,label,pages,focus,depth}]` (a node not in the plan is a proposal), `conflicts [{claim,pages,issue,nodes,resolution}]`. Pages are physical PDF pages. The digest stores the file hash; `prep-status`, `validate` and `source-show` report a document that is missing, not digested, or changed since its digest.
 
 ## Tests
 

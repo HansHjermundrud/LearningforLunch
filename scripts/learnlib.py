@@ -16,6 +16,7 @@ What lives here:
 from __future__ import annotations
 
 import datetime as _dt
+import hashlib
 import json
 import os
 import pathlib
@@ -36,6 +37,7 @@ DEFAULTS = {
     "reviewsDir": "notes/reviews",
     "exercisesDir": "exercises",
     "stateDir": "state",
+    "resourcesDir": "resources",
     "timezone": "",
     "checkpointMinutes": 12,
     "reviewMinutes": 10,
@@ -59,6 +61,7 @@ INDEPENDENT_ASSISTANCE = ("none", "clarify")
 RESULTS = ("pass", "partial", "fail", "unknown")
 CHECK_TYPES = ("short", "mcq", "code")
 CLAIM_KINDS = ("definition", "assumption", "guarantee", "simplification")
+SOURCE_ROLES = ("primary", "supplementary")
 
 _config_cache: dict | None = None
 
@@ -125,6 +128,39 @@ def prep_dir(slug: str, create: bool = False) -> pathlib.Path:
     if create:
         path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def source_digest_path(slug: str, source_id: str) -> pathlib.Path:
+    return prep_dir(slug) / "sources" / f"{source_id}.json"
+
+
+def file_sha256(path: pathlib.Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for block in iter(lambda: fh.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+_PDF_PAGE = re.compile(rb"/Type\s*/Page(?![a-zA-Z])")
+
+
+def pdf_page_count(path: pathlib.Path) -> int | None:
+    """Best-effort page count without a PDF library (uncompressed page objects only)."""
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return None
+    if not data.startswith(b"%PDF"):
+        return None
+    n = len(_PDF_PAGE.findall(data))
+    return n or None
+
+
+def split_source_ref(ref: str) -> tuple[str, str]:
+    """'notes:p12-14' -> ('notes', 'p12-14'); a plain id has no locator."""
+    sid, _, loc = str(ref).partition(":")
+    return sid, loc
 
 
 def backups_dir(create: bool = False) -> pathlib.Path:
@@ -655,8 +691,10 @@ def validate_topic_prep(prep: dict) -> None:
     prep.setdefault("sources", [])
     ids = set()
     for s in prep["sources"]:
-        if not isinstance(s, dict) or not s.get("id") or not s.get("url"):
-            raise ValidationError("every source needs id and url")
+        if not isinstance(s, dict) or not s.get("id") or not (s.get("url") or s.get("path")):
+            raise ValidationError("every source needs id and url (or path, for a local document)")
+        if s.get("kind") == "document" and s.get("role", "supplementary") not in SOURCE_ROLES:
+            raise ValidationError(f"source {s['id']}: role must be one of {SOURCE_ROLES}")
         if s["id"] in ids:
             raise ValidationError(f"duplicate source id {s['id']}")
         ids.add(s["id"])
@@ -672,6 +710,29 @@ def validate_topic_prep(prep: dict) -> None:
         seen.add(x["id"])
         for c in x.get("checks", []) or []:
             validate_check(c, f"exit {x['id']}")
+
+
+def validate_source_digest(d: dict) -> None:
+    """The document-reader's digest of one local document (see docs/SYSTEM.md)."""
+    if not isinstance(d, dict) or not str(d.get("summary", "")).strip():
+        raise ValidationError("digest needs a summary")
+    for key in ("objectives", "sections", "prerequisites_outside", "conflicts", "node_map"):
+        d.setdefault(key, [])
+        if not isinstance(d[key], list):
+            raise ValidationError(f"digest {key} must be a list")
+    seen = set()
+    for sec in d["sections"]:
+        if not isinstance(sec, dict) or not sec.get("id") or not sec.get("title"):
+            raise ValidationError("every digest section needs id and title")
+        if sec["id"] in seen:
+            raise ValidationError(f"duplicate digest section id {sec['id']}")
+        seen.add(sec["id"])
+    for c in d["conflicts"]:
+        if not isinstance(c, dict) or not c.get("claim") or not c.get("issue"):
+            raise ValidationError("every conflict needs claim and issue")
+    for m in d["node_map"]:
+        if not isinstance(m, dict) or not m.get("node"):
+            raise ValidationError("every node_map entry needs node")
 
 
 def validate_card(card: dict) -> None:
@@ -981,7 +1042,7 @@ def lesson_session(transcript_path, session_id: str) -> dict | None:
 
 # Lesson work in progress: a state command a lesson turn runs (not `checkpoint`, which the
 # Stop hook itself asks for and must not keep a finished lesson alive).
-_ACTIVITY_CMD = re.compile(r"scripts/state\.py\s+(start|resume|log-target|ask|record|hint|pending|answer|prep-show|next-node)\b")
+_ACTIVITY_CMD = re.compile(r"scripts/state\.py\s+(start|resume|log-target|ask|record|hint|pending|answer|prep-show|source-show|next-node)\b")
 LESSON_IDLE_PROMPTS = 2
 
 

@@ -843,5 +843,65 @@ class TestHooks(Base):
         self.assertIn("could not be read", out)
 
 
+# --- documents (learner-supplied PDFs) ---------------------------------------------------------
+
+TINY_PDF = (b"%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+            b"2 0 obj << /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >> endobj\n"
+            b"3 0 obj << /Type /Page /Parent 2 0 R >> endobj\n4 0 obj << /Type /Page /Parent 2 0 R >> endobj\n%%EOF\n")
+DIGEST = {"summary": "Lecture notes on TCP.", "scope_role": "primary", "objectives": ["explain retransmission"],
+          "sections": [{"id": "s1", "title": "Loss", "pages": "1-2", "depth": "explain", "nodes": ["n2"]}],
+          "node_map": [{"node": "n2", "pages": "1-2", "focus": "why packets get lost", "depth": "explain"},
+                       {"node": "n9", "label": "NEW: Congestion", "pages": "2", "focus": "cwnd"}],
+          "conflicts": [{"claim": "routers retransmit", "pages": "2", "issue": "end hosts retransmit", "nodes": ["n2"]}]}
+
+
+class TestDocuments(Base):
+    def setUp(self):
+        super().setUp()
+        (self.root / "resources").mkdir()
+        self.pdf = self.root / "resources" / "Course notes.pdf"
+        self.pdf.write_bytes(TINY_PDF)
+        self.start_lesson()
+
+    def test_register_digest_and_show_by_node(self):
+        out = self.state("source-add", "Course notes.pdf", "--role", "primary").stdout
+        self.assertIn("'Course-notes'", out)
+        self.assertIn("2 page(s)", out)
+        src = next(x for x in self.topic()["prep"]["sources"] if x.get("kind") == "document")
+        self.assertEqual(src["path"], "resources/Course notes.pdf")
+        self.assertIn("not digested", self.state("prep-status").stdout)
+        res = self.state("source-digest", "Course-notes", stdin=json.dumps(DIGEST))
+        self.assertIn("n9", res.stderr)  # proposed node is reported, not rejected
+        self.assertIn("digested, unchanged", self.state("source-show").stdout)
+        by_node = self.state("source-show", "--node", "n2").stdout
+        self.assertIn("pages 1-2", by_node)
+        self.assertIn("routers retransmit", by_node)
+        self.assertIn("No digested document maps to n1", self.state("source-show", "--node", "n1").stdout)
+        self.state("source-digest", "Course-notes", stdin=json.dumps({"sections": []}), expect=1)
+
+    def test_topic_reprep_keeps_documents_and_change_is_detected(self):
+        self.state("source-add", "resources/Course notes.pdf", "--id", "notes")
+        self.state("source-digest", "notes", stdin=json.dumps(DIGEST))
+        self.state("prep-topic", stdin=json.dumps(TOPIC_PREP))
+        ids = [x["id"] for x in self.topic()["prep"]["sources"]]
+        self.assertIn("notes", ids)
+        self.assertTrue(self.topic()["prep"]["sources"][-1]["digested"])
+        self.pdf.write_bytes(TINY_PDF + b"% edited\n")
+        self.assertIn("FILE CHANGED", self.state("prep-status").stdout)
+        self.assertIn("WARNING", self.state("validate").stdout)  # a warning, not a failure
+
+    def test_page_locators_count_as_known_sources(self):
+        self.state("source-add", "resources/Course notes.pdf", "--id", "notes")
+        prep = json.loads(json.dumps(PREP_N1))
+        prep["claims"] = [{"id": "c1", "kind": "definition", "text": "t", "sources": ["notes:p2"]}]
+        prep["source_refs"] = [{"source": "notes", "pages": "1-2", "note": "loss"}]
+        res = self.state("prep-node", "n1", stdin=json.dumps(prep))
+        self.assertNotIn("not in the topic registry", res.stderr)
+        self.assertIn("Source pages: notes 1-2 (loss)", self.state("prep-show", "n1").stdout)
+
+    def test_missing_file_is_refused(self):
+        self.state("source-add", "nope.pdf", expect=1)
+
+
 if __name__ == "__main__":
     unittest.main()

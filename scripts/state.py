@@ -12,6 +12,8 @@ Usage (run from the repo root):
   start "Title" [--goal ...] [--slug s] · goal TEXT · edge TEXT · pause · resume SLUG · stop [--summary]
   plan-set < plan.json · plan-show [NODE] · plan-approve · node-add ID "label" [--depends a,b]
   prep-topic < topic.json · prep-node ID < node.json · prep-show ID [--keys] · prep-status
+  source-add PATH [--id ID] [--role primary|supplementary] [--title T] [--pages 1-40] · source-digest ID < digest.json
+  source-show [ID] [--node N]
   next-node · ask NODE [--check ID] [--variant ID] [--fresh] [--kind K] [--exit ID] [--adhoc < q.json] [--replace]
   pending [--keys] · answer TEXT|--file F · hint [--level nudge|substep|worked]
   record < result.json   (one call: attempt + readiness + card + next step)
@@ -25,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 
 import learnlib as L
@@ -466,6 +469,15 @@ def cmd_validate(args):
                     L.validate_node_prep(L.read_json(f, {}))
                 except L.LearnError as exc:
                     problems.append(f"prep {L.rel(f)}: {exc}")
+            for f in sorted((folder / "sources").glob("*.json")):
+                try:
+                    L.validate_source_digest(L.read_json(f, {}))
+                except L.LearnError as exc:
+                    problems.append(f"digest {L.rel(f)}: {exc}")
+        for src in _documents(state["topics"][slug]):
+            status = _doc_status(slug, src)
+            if status != "digested, unchanged":
+                print(f"WARNING: {slug} document {src['id']}: {status}")
     if problems:
         for p in problems:
             print("PROBLEM: " + p)
@@ -925,6 +937,10 @@ def cmd_prep_topic(args):
             if unknown:
                 raise L.ValidationError(f"exit criterion {x['id']} names unknown nodes {unknown}")
         data.setdefault("verified", L.today())
+        # Documents registered with source-add survive a topic re-prep (their digest and hash live here).
+        old_docs = {x["id"]: x for x in topic.get("prep", {}).get("sources", []) if x.get("kind") == "document"}
+        data["sources"] = [dict(old_docs.pop(x["id"]), **x) if x["id"] in old_docs else x for x in data["sources"]]
+        data["sources"] += list(old_docs.values())
         topic["prep"] = data
         _touch(topic, "prep-topic", f"{len(data['chunks'])} chunks, {len(data['exit_criteria'])} exit criteria, {len(data['sources'])} sources")
         _save(st, f"Topic preparation recorded: {len(data['chunks'])} chunk(s), {len(data['exit_criteria'])} exit criteria, {len(data['sources'])} source(s).")
@@ -945,7 +961,9 @@ def cmd_prep_node(args):
             if pid not in ids:
                 raise L.ValidationError(f"prerequisite {pid} is not a plan node")
         known_sources = {s["id"] for s in topic.get("prep", {}).get("sources", [])}
-        missing = sorted({s for c in data.get("claims", []) for s in c.get("sources", []) if s not in known_sources})
+        cited = [r for c in data.get("claims", []) for r in c.get("sources", [])]
+        cited += [r.get("source", "") for r in data.get("source_refs", []) if isinstance(r, dict)]
+        missing = sorted({L.split_source_ref(r)[0] for r in cited} - known_sources)
         if missing:
             print(f"warning: claims cite sources not in the topic registry: {missing}", file=sys.stderr)
         data.setdefault("label", node["label"])
@@ -1004,6 +1022,9 @@ def cmd_prep_show(args):
             extra = f" · {c['boundary']}" if c.get("boundary") else ""
             src = f" [{', '.join(c.get('sources', []))}]" if c.get("sources") else ""
             print(f"  - ({c['kind']}) {c['text']}{extra}{src}")
+    if prep.get("source_refs"):
+        print("Source pages: " + "; ".join(f"{r.get('source')} {r.get('pages', '')}".strip() + (f" ({r['note']})" if r.get("note") else "")
+                                          for r in prep["source_refs"] if isinstance(r, dict)))
     if prep.get("misconceptions"):
         print("Misconceptions → repair:")
         for m in prep["misconceptions"]:
@@ -1025,6 +1046,8 @@ def cmd_prep_status(args):
     tp = topic.get("prep", {})
     print(f"Topic prep: capability {'set' if tp.get('capability') else 'MISSING'} · chunks {len(tp.get('chunks', []))} · "
           f"exit criteria {len(tp.get('exit_criteria', []))} · sources {len(tp.get('sources', []))} · verified {tp.get('verified') or 'no'}")
+    for src in _documents(topic):
+        print(f"  document {src['id']} ({src.get('role')}): {_doc_status(slug, src)}")
     chunk = current_chunk(topic)
     info = eligible(topic)
     rec = info["recommended"]["id"] if info["recommended"] else None
@@ -1037,6 +1060,155 @@ def cmd_prep_status(args):
         if n["id"] == rec:
             flag += "  <- next to teach"
         print(f"  {n['id']:5} {n.get('coverage','pending'):8} {n.get('readiness','unknown'):13} prep: {tag}{flag}")
+
+
+# --- documents (PDFs and other local sources) ------------------------------------------
+
+def _documents(topic: dict) -> list[dict]:
+    return [x for x in topic.get("prep", {}).get("sources", []) if x.get("kind") == "document"]
+
+
+def _doc_file(src: dict):
+    return L.resolve(src["path"])
+
+
+def _doc_status(slug: str, src: dict) -> str:
+    path = _doc_file(src)
+    if not path.exists():
+        return f"FILE MISSING ({src['path']})"
+    if not src.get("digested") or not L.source_digest_path(slug, src["id"]).exists():
+        return "not digested yet (run the document-reader, then source-digest)"
+    if L.file_sha256(path) != src.get("digest_sha256"):
+        return f"FILE CHANGED since the digest of {src['digested']}: re-digest and recheck the nodes that cite it"
+    return "digested, unchanged"
+
+
+def _find_document(topic: dict, source_id: str) -> dict:
+    for src in _documents(topic):
+        if src["id"] == source_id:
+            return src
+    known = ", ".join(x["id"] for x in _documents(topic)) or "none"
+    raise L.LearnError(f"no document source '{source_id}' (registered: {known}). Add it: source-add PATH")
+
+
+def cmd_source_add(args):
+    path = L.resolve(args.path)
+    if not path.exists():
+        alt = L.dir_path("resourcesDir") / args.path
+        if alt.exists():
+            path = alt
+    if not path.is_file():
+        raise L.LearnError(f"no such file: {args.path} (put documents in {L.rel(L.dir_path('resourcesDir'))}/)")
+    sid = args.id or (re.sub(r"[^A-Za-z0-9_-]+", "-", path.stem).strip("-_")[:32] or "doc")
+    if not sid[0].isalpha():
+        sid = "d" + sid[:31]
+    try:
+        stored = str(path.resolve().relative_to(L.ROOT))
+    except ValueError:
+        stored = str(path)
+    with L.Store(write=True) as st:
+        slug, topic = _topic(st.state)
+        prep = topic.setdefault("prep", {})
+        L.validate_topic_prep(prep)
+        sha = L.file_sha256(path)
+        old = next((x for x in prep["sources"] if x["id"] == sid), None)
+        if old is not None and old.get("kind") != "document":
+            raise L.LearnError(f"source id '{sid}' is already a web source; pick another with --id")
+        entry = dict(old or {})
+        entry.update({"id": sid, "kind": "document", "path": stored, "sha256": sha, "bytes": path.stat().st_size,
+                      "page_count": L.pdf_page_count(path), "added": entry.get("added") or L.today()})
+        entry["title"] = args.title or entry.get("title") or path.stem
+        entry["role"] = args.role or entry.get("role") or "primary"
+        if args.pages is not None:
+            entry["pages"] = args.pages
+        entry.setdefault("pages", "")
+        entry.setdefault("digested", "")
+        entry.setdefault("digest_sha256", "")
+        if old is None:
+            prep["sources"].append(entry)
+        else:
+            old.clear()
+            old.update(entry)
+        L.validate_topic_prep(prep)
+        _touch(topic, "source-add", f"{sid} ({entry['role']}): {stored}")
+        pages = f", {entry['page_count']} page(s)" if entry["page_count"] else ""
+        scope = f", scope pages {entry['pages']}" if entry["pages"] else ""
+        _save(st, f"Document '{sid}' registered ({entry['role']}{pages}{scope}): {stored}. {_doc_status(slug, entry)}")
+
+
+def cmd_source_digest(args):
+    data = _stdin_json()
+    L.validate_source_digest(data)
+    with L.Store(write=True) as st:
+        slug, topic = _topic(st.state)
+        src = _find_document(topic, args.id)
+        path = _doc_file(src)
+        if not path.exists():
+            raise L.LearnError(f"{src['path']} is missing; cannot tie the digest to a file version")
+        ids = {n["id"] for n in _nodes(topic)}
+        proposed = sorted({m["node"] for m in data["node_map"]} - ids)
+        if proposed:
+            print(f"note: node_map names nodes not in the plan yet: {proposed} (add them with node-add if you adopt them)", file=sys.stderr)
+        data.update({"source": args.id, "sha256": L.file_sha256(path), "saved": L.ts()})
+        L.write_json(L.source_digest_path(slug, args.id), data)
+        src["digested"] = L.today()
+        src["digest_sha256"] = data["sha256"]
+        _touch(topic, "source-digest", f"{args.id}: {len(data['sections'])} sections, {len(data['conflicts'])} conflict(s)")
+        _save(st, f"Digest of '{args.id}' saved: {len(data['sections'])} section(s), {len(data['objectives'])} objective(s), "
+                  f"{len(data['node_map'])} node mapping(s), {len(data['conflicts'])} flagged conflict(s).")
+
+
+def cmd_source_show(args):
+    state = L.load_state()
+    slug, topic = _topic(state)
+    docs = _documents(topic)
+    if args.id:
+        docs = [_find_document(topic, args.id)]
+    if not docs:
+        print("No documents registered. Put the file in resources/ and run: python3 scripts/state.py source-add resources/<file>.pdf --role primary")
+        return
+    shown = 0
+    for src in docs:
+        digest = L.read_json(L.source_digest_path(slug, src["id"]), None)
+        if args.node:
+            if not digest:
+                continue
+            maps = [m for m in digest["node_map"] if m["node"] == args.node]
+            secs = [x for x in digest["sections"] if args.node in x.get("nodes", [])]
+            if not maps and not secs:
+                continue
+            shown += 1
+            print(f"{src['id']} ({src.get('role')}) for {args.node}:")
+            for m in maps:
+                print(f"  pages {m.get('pages', '?')}: {m.get('focus', '')}" + (f" [depth: {m['depth']}]" if m.get("depth") else ""))
+            for x in secs:
+                print(f"  § {x['id']} {x['title']} (pages {x.get('pages', '?')})")
+            for c in digest["conflicts"]:
+                if args.node in c.get("nodes", []):
+                    print(f"  ! conflict p{c.get('pages', '?')}: {c['claim']} — {c['issue']}" + (f" → {c['resolution']}" if c.get("resolution") else ""))
+            continue
+        print(f"{src['id']} · {src.get('title')} ({src.get('role')}; {src['path']}"
+              + (f"; scope pages {src['pages']}" if src.get("pages") else "") + f") — {_doc_status(slug, src)}")
+        if not digest or not args.id:
+            continue
+        print(f"Summary: {digest['summary']}")
+        if digest.get("scope_role"):
+            print(f"Role in scope: {digest['scope_role']}")
+        if digest["objectives"]:
+            print("Objectives: " + "; ".join(digest["objectives"]))
+        print("Sections:")
+        for x in digest["sections"]:
+            nodes = f" → {', '.join(x['nodes'])}" if x.get("nodes") else ""
+            depth = f" [{x['depth']}]" if x.get("depth") else ""
+            print(f"  § {x['id']} {x['title']} (pages {x.get('pages', '?')}){depth}{nodes}")
+        if digest["prerequisites_outside"]:
+            print("Prerequisites it assumes: " + "; ".join(map(str, digest["prerequisites_outside"])))
+        if digest["conflicts"]:
+            print("Flagged conflicts:")
+            for c in digest["conflicts"]:
+                print(f"  ! p{c.get('pages', '?')}: {c['claim']} — {c['issue']}" + (f" → {c['resolution']}" if c.get("resolution") else " (unresolved)"))
+    if args.node and not shown:
+        print(f"No digested document maps to {args.node}.")
 
 
 # --- interactions ------------------------------------------------------------------------
@@ -1408,6 +1580,10 @@ def main(argv=None):
     p = sub.add_parser("prep-node"); p.add_argument("id"); p.set_defaults(fn=cmd_prep_node)
     p = sub.add_parser("prep-show"); p.add_argument("id"); p.add_argument("--keys", action="store_true"); p.set_defaults(fn=cmd_prep_show)
     sub.add_parser("prep-status").set_defaults(fn=cmd_prep_status)
+    p = sub.add_parser("source-add"); p.add_argument("path"); p.add_argument("--id"); p.add_argument("--title")
+    p.add_argument("--role", choices=L.SOURCE_ROLES); p.add_argument("--pages"); p.set_defaults(fn=cmd_source_add)
+    p = sub.add_parser("source-digest"); p.add_argument("id"); p.set_defaults(fn=cmd_source_digest)
+    p = sub.add_parser("source-show"); p.add_argument("id", nargs="?"); p.add_argument("--node"); p.set_defaults(fn=cmd_source_show)
 
     p = sub.add_parser("ask"); p.add_argument("node"); p.add_argument("--check"); p.add_argument("--variant"); p.add_argument("--fresh", action="store_true")
     p.add_argument("--kind", choices=list(L.ATTEMPT_KINDS)); p.add_argument("--exit"); p.add_argument("--adhoc", action="store_true"); p.add_argument("--replace", action="store_true")

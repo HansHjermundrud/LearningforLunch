@@ -17,3 +17,7 @@ Thumbs.db
 state/
 exercises/**/.attempts/
 exercises/**/.validate*
+
+# learner-supplied documents (PDFs) stay on this device
+resources/*
+!resources/README.md

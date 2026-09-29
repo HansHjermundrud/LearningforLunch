@@ -44,6 +44,7 @@ Socratic when the next step is reasonably discoverable from what the learner has
 | Save an answer turn | `python3 scripts/state.py record < result.json` (attempt + readiness + card + NEXT in one call) |
 | Multiple choice | The question comes from `ask`; paste it as printed. `AskUserQuestion` only for questions without code, one question per call |
 | Coding task | `code-task` skill |
+| A learner-supplied PDF or document | `source-add`, the `document-reader` subagent, `source-digest` during preparation; `source-show --node n7` while teaching (see "Documents") |
 | Verify a fact | `researcher` subagent, during preparation or for a genuinely uncertain claim; persist the result in the prep |
 | A diagram | `visualize` skill, when structure or geometry is the point |
 
@@ -69,13 +70,28 @@ Reuse the profile and existing evidence. Ask a few informative multiple-choice q
 4. **Node preparation for the upcoming chunk only** (`prep-node n7`, JSON on stdin): objective; prerequisites and why the node is needed; a motivating example; an explanation outline with any derivation that helps; claims tagged definition/assumption/guarantee/simplification with scope, boundary and source ids; misconceptions with repairs; one normal check plus, where useful, a fresh variant for a suspicious pass or a transfer check; committed keys with required points, accepted alternatives and disqualifying misconceptions; a three-rung hint ladder (prompt attention, suggest a substep, show a partial worked step); a code exercise spec where code proves the objective; whether the check is worth a review card (`review: true` for durable concepts, recurring misconceptions, transferable procedures; not for warm-ups). Run `python3 scripts/exercise.py validate` on any exercise before handing it out.
 5. **Checks before teaching**: `python3 scripts/state.py validate` (graph, schemas, prep files) and `prep-status`. Questions must be self-contained (code and assumptions inside the question, never "the n1 snippet"); distractors genuinely wrong under the stated assumptions and not revealing the answer by wording; required points testing the objective, not the model answer's phrasing. Compile examples when useful and keep "observed on gcc 13" separate from "guaranteed by the spec".
 
+If the learner supplied a document, it is part of step 1: see "Documents" below.
+
 Extend the prepared material at chunk boundaries or when scope changes. Recheck only what a change affects; never refetch every source at session start.
+
+## Documents (a PDF the learner gives you)
+
+A syllabus, lecture notes, a textbook chapter or a past exam tells you what the learner will be examined on and at what depth. Read it once, during preparation, in a subagent; teach from the digest.
+
+1. **Role and range.** The file lives in `resources/` (`resourcesDir` in `learn.config.json`). If the learner did not say, ask one question: does it *define the required scope* (primary) or is it *supplementary*? For a long textbook, ask which chapters or pages matter. Do not read the PDF yourself.
+2. **Register**: `python3 scripts/state.py source-add resources/notes.pdf --id notes --role primary [--pages 1-40] [--title "..."]`. It records the path, size, page count and a hash, so a later change to the file is detected.
+3. **Digest**: launch the `document-reader` subagent with the path, page range, role, goal, environment, the plan (`plan-show` node ids and labels, which are covered) and an output path in the scratchpad. Then `python3 scripts/state.py source-digest notes < <output path>`. Its reply is short; read the digest with `source-show notes`.
+4. **Flagged conflicts** go to the researcher in one batched call. Settle each one: the node's claims then teach the verified version and, where the learner will meet the document's wording, a misconception entry says what the document says and why it is wrong or narrower. Never repeat a flagged statement as fact.
+5. **Plan.** For a new topic, build the plan from the digest (primary: its objectives and depth are the scope; supplementary: it only adds examples and exercises). For a topic already under way, preserve progress: do not re-run `plan-set` or re-approve. Adjust only what the document changes: `node-add` for a real gap (proposed as `NEW:` in the digest), `node-edit` for a changed label or dependency, `scope ID --optional` for material the primary document leaves out. Covered nodes are not re-taught; if the document demands more depth than a covered node was taught at, add a short follow-up node or a targeted check rather than reopening it. Tell the learner in a few sentences what changed and why; one go-ahead.
+6. **Nodes.** In each affected node's prep, set `source_refs: [{"source": "notes", "pages": "12-18", "note": "..."}]`, cite page-specific claims as `"sources": ["notes:p14"]`, match the document's notation where the learner will be examined on it, and aim checks at the depth the document expects (its exercises are good models; do not copy exam questions verbatim if the learner will see them later). Keep what the document covers apart from prerequisites and supplementary explanations you add.
+
+While teaching, `source-show --node n7` prints the pages and focus for the node in two or three lines; open specific pages of the PDF only when a question needs the exact wording or figure. `prep-status` and `validate` warn when a document changed after its digest: re-digest and recheck the nodes that cite it, nothing else.
 
 ## Phase 3: teach (the loop)
 
 Per node, in one or two messages:
 
-1. `prep-show n7` (read it; do not paste it). Name the node as `n7 · Synchronization` once. A map only at planning, at chunk transitions, or on request.
+1. `prep-show n7` (read it; do not paste it; it lists the document pages if a document maps to the node). Name the node as `n7 · Synchronization` once. A map only at planning, at chunk transitions, or on request.
 2. Motivate briefly, explain or guide the derivation at the learner's depth, make the connection to prior nodes explicit. Keep the message focused; the note mirrors it.
 3. Ask one check: `ask n7`, paste its question as printed (code stays in the fenced block, options lettered, "I don't know" last), end the turn.
 4. On the reply, decide result, met and missed required points, assistance (taken from `hint` automatically), any misconception, and quality; write `record`'s JSON; run it. Then give concise, honest feedback: what was right, the missing point with its model answer, and continue. Do not repeat a mini-lecture after a correct answer.
