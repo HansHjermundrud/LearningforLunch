@@ -15,7 +15,8 @@ The heavy work happens while preparing a lesson: research, verified claims, comm
 - **Practical coding exercises** — Apply programming concepts through tasks, starter files, and tests under `exercises/`, including C with OpenMP.
 - **Persistent lesson state** — Store the active topic, plan, per-node evidence, any open question, and the next step in files that survive restarts and context compaction.
 - **Obsidian integration** — Mirror lesson exchanges into dated Markdown notes with Mermaid diagrams and SVG assets.
-- **Research and diagram agents** — Delegate topic research and visual verification to specialized Claude Code subagents.
+- **Your own course material** — Drop lecture notes, a syllabus or past exams into `resources/`. The tutor digests each document once, page-referenced, and uses it to scope the plan or as a supplementary source.
+- **Research, document and diagram agents** — Delegate topic research, document reading and visual verification to specialized Claude Code subagents.
 
 ## How a lesson works
 
@@ -45,11 +46,9 @@ The commands below use a Bash shell, such as one available on Linux, macOS, or W
 
 ### 1. Clone the repository
 
-Replace the placeholder URL with this repository's clone URL:
-
 ```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git ~/learning
-cd ~/learning
+git clone https://github.com/HansHjermundrud/LearningforLunch.git ~/LearningforLunch
+cd ~/LearningforLunch
 ```
 
 ### 2. Install the diagram renderer
@@ -64,9 +63,13 @@ This installs the locked dependencies without downloading Puppeteer's bundled br
 
 ### 3. Configure your folders
 
-Set the folders in `learn.config.json` to match your workspace or Obsidian vault.
+Copy the example configuration, then set the folders to match your workspace or Obsidian vault:
 
-For a local setup, use:
+```bash
+cp learn.config.example.json learn.config.json
+```
+
+`learn.config.json` is gitignored, so your paths stay on your machine. Without it, the defaults below apply. For a local setup, use:
 
 ```json
 {
@@ -75,6 +78,7 @@ For a local setup, use:
   "reviewsDir": "notes/reviews",
   "exercisesDir": "exercises",
   "stateDir": "state",
+  "resourcesDir": "resources",
   "timezone": "",
   "checkpointMinutes": 12
 }
@@ -92,11 +96,15 @@ For Obsidian, change the three note paths to folders inside your vault. For exam
 }
 ```
 
-These are the three fields to update in the full configuration. Keep `stateDir` and `exercisesDir` inside the repository.
+These are the three fields to update in the full configuration. Keep `stateDir`, `exercisesDir` and `resourcesDir` inside the repository.
 
 ### 4. Set up your learner profile
 
-Edit `LEARNER.md` with your background, current goals, preferred programming languages, and learning preferences.
+```bash
+cp LEARNER.example.md LEARNER.md
+```
+
+Edit `LEARNER.md` with your background, current goal, preferred programming languages, and learning preferences. The tutor appends dated standing notes to it as it learns how you learn. Like the configuration, it is gitignored and stays personal.
 
 Then launch Claude Code from the project root:
 
@@ -109,6 +117,16 @@ Start a lesson with a topic of your choice:
 ```text
 /teach Python decorators
 ```
+
+### 5. Optional: add your own material
+
+Put PDFs or other documents in `resources/` and tell the tutor what they are for, for example:
+
+```text
+Use resources/course-notes.pdf as the primary guide for what I should learn (pages 1-60).
+```
+
+The `document-reader` agent reads the file once and stores a page-referenced digest with the lesson. See `resources/README.md`.
 
 ## Commands
 
@@ -129,6 +147,7 @@ python3 scripts/state.py show --full
 python3 scripts/state.py next-node
 python3 scripts/state.py pending
 python3 scripts/state.py topics
+python3 scripts/state.py source-show
 python3 scripts/srs.py stats
 python3 scripts/srs.py forecast
 python3 scripts/exercise.py list
@@ -166,10 +185,10 @@ Claude Code provides the teaching interface. Skills define the lesson and assess
 | Component | Responsibility |
 | --- | --- |
 | Tutor and skills | Probe knowledge, plan and prepare lessons, teach concepts, assess answers, and provide feedback. |
-| Research and diagram agents | Research and verify topics during preparation, and create visually verified diagrams. |
+| Subagents | Research and verify topics during preparation, digest learner-supplied documents, and create visually verified diagrams. |
 | State scripts | Record topics, dependency plans, prepared material, per-node evidence, open questions, and the next teaching step. Writes are locked, validated, and journaled. |
 | Review scheduler | Store cards and apply SM-2 scheduling to recorded grades. |
-| Hooks | Inject a compact session snapshot, mirror transcripts, and prompt overdue checkpoints. |
+| Hooks | Inject a compact session snapshot (`SessionStart`), mirror transcripts and prompt overdue checkpoints (`Stop`), and confirm state is safe before compaction (`PreCompact`). |
 | Markdown notes | Provide a readable lesson record, including explanations, questions, and diagrams. |
 
 ### Project structure
@@ -178,22 +197,24 @@ Claude Code provides the teaching interface. Skills define the lesson and assess
 | --- | --- |
 | `.claude/settings.json` | Session model, permissions, and hook configuration. |
 | `.claude/skills/` | Teaching, review, coding, visualization, status, and checkpoint workflows. |
-| `.claude/agents/` | Researcher, Mermaid, and SVG agent definitions. |
-| `scripts/state.py` | Topic, plan, preparation, evidence, pending question, and checkpoint management. |
+| `.claude/agents/` | Researcher, document-reader, Mermaid, and SVG agent definitions. |
+| `scripts/state.py` | Topic, plan, preparation, document sources, evidence, pending question, and checkpoint management. |
 | `scripts/srs.py` | Review cards, scheduling, and answer-key corrections. |
 | `scripts/exercise.py` | Exercise scaffolding (Python, JavaScript, C/OpenMP), validation, and test execution. |
-| `scripts/session_log.py` | Transcript mirroring into lesson notes. |
+| `scripts/session_log.py` | Transcript mirroring into lesson notes (Stop hook). |
+| `scripts/hook_*.py` | SessionStart snapshot, overdue-checkpoint reminder, and PreCompact safety check. |
 | `scripts/render.py` | Mermaid and SVG rendering for visual inspection. |
 | `scripts/learnlib.py` | Shared configuration, date, schema, migration, locking, and persistence helpers. |
 | `scripts/selftest.sh` | Isolated smoke test, followed by the regression suite. |
 | `scripts/tests/` | Regression tests with temporary state and an injectable clock. |
-| `state/` | Lesson state, review deck, prepared material (`prep/`), readable progress summary, and backups. |
+| `state/` | Lesson state, review deck, prepared material (`prep/`), readable progress summary, and backups. Local only (gitignored). |
 | `docs/` | `SYSTEM.md` (data and commands) and `SCENARIOS.md` (expected tool calls per teaching turn). |
 | `notes/` | Local note storage when configured with relative paths. |
-| `exercises/` | Coding tasks, starter files, and tests. |
+| `exercises/` | Coding tasks, starter files, and tests, generated per lesson. Local only (gitignored). |
+| `resources/` | Learner-supplied documents such as lecture notes and syllabi. Local only (gitignored). |
 | `tools/` | Mermaid CLI dependencies and npm lockfile. |
-| `learn.config.json` | Folder paths, time zone, and checkpoint interval. |
-| `LEARNER.md` | Learner profile and preferences. |
+| `learn.config.example.json` | Template for `learn.config.json`: folder paths, time zone, and checkpoint interval. |
+| `LEARNER.example.md` | Template for `LEARNER.md`: learner profile, preferences, and standing notes. |
 | `CLAUDE.md` | Tutor instructions loaded each session. |
 
 ## Model configuration

@@ -21,3 +21,11 @@ exercises/**/.validate*
 # learner-supplied documents (PDFs) stay on this device
 resources/*
 !resources/README.md
+
+# personal setup: copy from the *.example files
+LEARNER.md
+learn.config.json
+
+# exercises are generated per lesson and hold the learner's solutions
+exercises/*
+!exercises/.gitkeep

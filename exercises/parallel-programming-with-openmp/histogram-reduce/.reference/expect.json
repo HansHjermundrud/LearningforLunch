@@ -1,7 +1,0 @@
-{
-  "reference.c": "PASS",
-  "reference-manual.c": "PASS",
-  "flawed-doublecount.c": "FAIL",
-  "flawed-race.c": "FAIL-or-unreliable",
-  "_note": "The doublecount variant is the n8 misconception m1 (copies start from the original). check.sh also rejects any atomic/critical inside the loop body by inspection: the task is to remove per-element synchronization."
-}

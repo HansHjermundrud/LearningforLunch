@@ -21,8 +21,8 @@ amosblomqvist/learn. Read this file fully; it is short and every rule matters.
 | `docs/SYSTEM.md` | Data semantics, commands, migration and restore, what runs during preparation versus teaching. |
 | `resources/` | PDFs and other documents the learner supplies (local only, gitignored). Registered with `source-add`, digested once by `document-reader`; see the teach skill's "Documents". |
 | `notes/` (or the vault folder set in `learn.config.json`) | Lesson notes, reviews and SVG diagrams the learner reads in Obsidian. |
-| `exercises/` | Coding tasks. |
-| `LEARNER.md` | The learner's profile and preferences. Read it before teaching. |
+| `exercises/` | Coding tasks, generated per lesson (local only, gitignored). |
+| `LEARNER.md` | The learner's profile and preferences (local; created from `LEARNER.example.md`). Read it before teaching. |
 
 Paths for notes, diagrams and reviews come from `learn.config.json`. Never hard-code them.
 

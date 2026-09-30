@@ -1,7 +1,0 @@
-{
-  "reference.c": "PASS",
-  "flawed-offbyone.c": "FAIL",
-  "flawed-race.c": "FAIL-or-unreliable",
-  "flawed-critical-wrong-scope.c": "PASS",
-  "_note": "flawed-race.c is the starter; a passing run proves nothing, so the grade rests on the learner's explanation of which accesses the construct orders. flawed-critical-wrong-scope.c is correct but slow: use it in perf.sh to show the cost of over-wide critical sections."
-}
