@@ -643,6 +643,9 @@ def validate_check(c: dict, where: str) -> None:
     if not isinstance(c["hints"], list):
         raise ValidationError(f"{where}/{c['id']}: hints must be a list")
     c.setdefault("exercise", "")
+    for field in ("follows", "context"):
+        if not isinstance(c.get(field, ""), str):
+            raise ValidationError(f"{where}/{c['id']}: {field} must be a string")
 
 
 def validate_node_prep(prep: dict) -> None:

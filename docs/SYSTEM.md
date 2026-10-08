@@ -102,6 +102,8 @@ Key corrections:
 - `amend-key` (clarify or extend): rubric version +1, old key kept in `key_history`, attempts stay valid.
 - `invalidate-key` (the key was wrong or ambiguous): old key kept, attempts under it marked `valid: false` and excluded, schedule recomputed from the valid history only (fresh if none), `needs_replacement_check` set so the next `due` asks it as a new check. Unrelated cards are untouched.
 
+Follow-up cards: a review card is asked on its own, often days after the lesson, so it must make sense without the question that came before it. A check written as a follow-up ("now `private(last)` is added", "in the same schema") sets `follows` (the earlier check's id, or `node/check`) and optionally `context` (a one-line recap of the setup). The card carries both; `due` prefixes the question with *Builds on an earlier question:* and the recap (or the earlier card's question, shortened), and asks the earlier card first when both are selected. `srs.py link ID --follows CARD [--context "..."]` marks an existing card; `--clear` removes the link.
+
 Review sessions: `due` fills `reviewMinutes` (default 10; per-type cost `reviewCostMinutes`) oldest-due first; the rest are listed as deferred with their due dates unchanged. Code cards go last and are offered if time allows.
 
 ## Durability
@@ -118,7 +120,7 @@ Restore: `python3 scripts/state.py restore --list`, then `restore state/backups/
 
 `state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `node-edit`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `correction`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `source-add`, `source-digest`, `source-show`, `ask`, `pending`, `answer`, `hint`, `record`.
 
-`srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `amend-key`, `invalidate-key`.
+`srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `link`, `amend-key`, `invalidate-key`.
 
 `exercise.py`: `env`, `new`, `check [--file]`, `validate`, `list`.
 
@@ -139,7 +141,7 @@ Only `result` is required. Omitted `required_*` are inferred from the result; om
 
 Topic (`prep-topic`): `capability`, `environment`, `chunks [{id,label,nodes}]`, `exit_criteria [{id,text,nodes,checks}]`, `sources [{id,url,title,section,verified}]`. Documents registered with `source-add` are entries `{id, kind: "document", path, role: primary|supplementary, title, pages, page_count, sha256, bytes, added, digested, digest_sha256}`; a later `prep-topic` keeps them even if its `sources` omits them.
 
-Node (`prep-node`): `objective`, `why_needed`, `prerequisites`, `motivation`, `outline []`, `claims [{id,kind,text,scope,boundary,sources}]`, `misconceptions [{id,text,repair}]`, `checks [{id,type,role,load_bearing,review,kind,variants [{id,question,code,options,answer,required,accepted,disqualifying,rubric_version}],hints [3],exercise}]`, `code_exercise`, `review_suitability`, `status draft|ready`, `verified`, optional `source_refs [{source,pages,note}]`. A claim's `sources` may carry a locator: `"notes:p14"`.
+Node (`prep-node`): `objective`, `why_needed`, `prerequisites`, `motivation`, `outline []`, `claims [{id,kind,text,scope,boundary,sources}]`, `misconceptions [{id,text,repair}]`, `checks [{id,type,role,load_bearing,review,kind,follows,context,variants [{id,question,code,options,answer,required,accepted,disqualifying,rubric_version}],hints [3],exercise}]`, `code_exercise`, `review_suitability`, `status draft|ready`, `verified`, optional `source_refs [{source,pages,note}]`. A claim's `sources` may carry a locator: `"notes:p14"`.
 
 Digest (`source-digest ID`, written by the `document-reader` subagent): `summary` (required), `scope_role`, `objectives []`, `sections [{id,title,pages,depth,concepts,notation,exercises,nodes}]`, `prerequisites_outside []`, `node_map [{node,label,pages,focus,depth}]` (a node not in the plan is a proposal), `conflicts [{claim,pages,issue,nodes,resolution}]`. Pages are physical PDF pages. The digest stores the file hash; `prep-status`, `validate` and `source-show` report a document that is missing, not digested, or changed since its digest.
 

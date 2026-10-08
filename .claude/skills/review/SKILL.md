@@ -17,7 +17,7 @@ Reviews test recall of prepared cards, grade honestly against the committed key,
 
 ## For each card, one at a time
 
-Use the `ask_text` the `due --json` output gives you: it already picks the variant asked least recently, puts code in a fenced block and letters the options with "I don't know" last. Paste it, end the turn, wait.
+Use the `ask_text` the `due --json` output gives you: it already picks the variant asked least recently, puts code in a fenced block and letters the options with "I don't know" last. If a card builds on an earlier question, `ask_text` starts with a *Builds on an earlier question:* line; keep it, and the earlier card is ordered first. If you notice a card that only makes sense after another question and has no such line, link it: `python3 scripts/srs.py link <id> --follows <earlier id> [--context "one-line recap"]`. Paste it, end the turn, wait.
 
 - **short**: grade against the stored answer and required points. Quality: 5 complete and precise, 4 correct with a small gap or hesitation, 3 core present and every required point met but a minor point missing, 2 wrong or missing a required point, 1 wrong, 0 blank or "I don't know". Give the model answer and what was missing.
 - **mcq**: 5 if right, 2 if wrong, 0 for "I don't know". Explain in one or two sentences.

@@ -562,6 +562,39 @@ class TestSrsRules(Base):
         data = json.loads(self.srs("due", "--json", "--all", now="2026-09-30T09:00:00+02:00").stdout)
         self.assertEqual(len(data["selected"]), 6)
 
+    def test_followup_card_references_and_follows_its_parent(self):
+        parent = self.srs("add", "--topic", "t", "--type", "short", "--q", "Can this loop get parallel for? last = b[i]",
+                          "--a", "no", "--points", "race on last").stdout.strip()
+        child = self.srs("add", "--topic", "t", "--type", "short", "--q", "Now private(last) is added. What is last after the loop?",
+                         "--a", "unchanged", "--points", "private copy").stdout.strip()
+        # make the child older-due so it would sort first without the link
+        self.srs("grade", child, "1", "--kind", "initial")
+        self.srs("grade", parent, "1", "--kind", "initial", now="2026-09-26T09:00:00+02:00")
+        later = "2026-09-30T09:00:00+02:00"
+        data = json.loads(self.srs("due", "--json", "--all", now=later).stdout)
+        self.assertEqual([c["id"] for c in data["selected"]], [child, parent])
+        self.assertNotIn("Builds on", data["selected"][0]["ask_text"])
+        self.srs("link", child, "--follows", parent)
+        data = json.loads(self.srs("due", "--json", "--all", now=later).stdout)
+        self.assertEqual([c["id"] for c in data["selected"]], [parent, child])
+        self.assertTrue(data["selected"][1]["ask_text"].startswith("*Builds on an earlier question:* Can this loop get parallel for?"))
+        self.srs("link", child, "--context", "the loop that writes last = b[i] in every iteration")
+        data = json.loads(self.srs("due", "--json", "--all", now=later).stdout)
+        self.assertIn("the loop that writes last = b[i]", data["selected"][1]["ask_text"])
+        self.assertNotEqual(self.srs("link", child, "--follows", "nope", expect=None).returncode, 0)
+        self.srs("link", child, "--clear")
+        self.assertNotIn("follows", self.card(child))
+
+    def test_followup_check_promotes_with_reference(self):
+        out = self.py("""
+            import json, srs
+            check = {"id": "q2", "type": "short", "follows": "q1", "context": "same packet trace",
+                     "variants": [{"id": "v1", "question": "Now one packet is lost. What happens?", "answer": "retransmit", "required": ["retransmit"]}]}
+            card = srs.card_from_check("t", "n1", check, set())
+            print(json.dumps([card["follows"], card["context"]]))
+        """).stdout
+        self.assertEqual(json.loads(out), ["n1/q1", "same packet trace"])
+
     def test_srs_grade_review_flags_node_retention(self):
         self.start_lesson()
         self.state("ask", "n1")

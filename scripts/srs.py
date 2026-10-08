@@ -13,6 +13,11 @@ code tasks (see docs/SYSTEM.md "Grade semantics"):
 q >= 3 always means: every required point met AND no substantive assistance.
 `grade --assisted` or `--missing-required` caps q at 2 even if the teacher says 4.
 
+Follow-up cards: a card written as a follow-up to another question carries
+`follows` (a card id, or a check key "n3/q1" in the same topic) and optionally
+`context` (a one-line recap of the setup it builds on). `due` prefixes its
+ask_text with that reference and asks the earlier card first when both are due.
+
 Scheduling rules (deck v2):
   - an attempt kind is initial, practice, review, repair or exit
   - a practice or repair success (a reattempt right after an explanation) is history only
@@ -23,7 +28,7 @@ Scheduling rules (deck v2):
   - days follow the configured timezone; LEARN_NOW=<iso> injects the clock
 
 Usage (from the repo root):
-  python3 scripts/srs.py add --topic SLUG --type short --q "..." --a "..." [--points "k1;k2"] [--options "A|B|C"] [--task DIR] [--node ID] [--check ID]
+  python3 scripts/srs.py add --topic SLUG --type short --q "..." --a "..." [--points "k1;k2"] [--options "A|B|C"] [--task DIR] [--node ID] [--check ID] [--follows REF] [--context "..."]
   python3 scripts/srs.py promote < card.json         # {"topic","node","check","type","kind","variants":[...]}
   python3 scripts/srs.py due [--topic SLUG] [--limit N] [--budget MIN] [--all] [--json]
   python3 scripts/srs.py grade ID Q [--kind initial|practice|review|repair|exit] [--op ID] [--assisted] [--missing-required] [--variant V] [--note "..."]
@@ -33,6 +38,7 @@ Usage (from the repo root):
   python3 scripts/srs.py history ID
   python3 scripts/srs.py forecast [--days 14]
   python3 scripts/srs.py suspend ID | unsuspend ID
+  python3 scripts/srs.py link ID --follows REF [--context "..."] | link ID --clear   # mark a follow-up question
   python3 scripts/srs.py amend-key ID --reason "..." < key.json        # clarify a key; history stays valid
   python3 scripts/srs.py invalidate-key ID --reason "..." < key.json   # wrong key; old attempts no longer count
 """
@@ -226,7 +232,35 @@ def select_due(cards: list[dict], on: str, budget: float | None, limit: int | No
             continue
         selected.append(c)
         minutes += cost
-    return selected, deferred, minutes
+    return order_followups(selected, cards), deferred, minutes
+
+
+def order_followups(selected: list[dict], cards: list[dict]) -> list[dict]:
+    """Keep the selection order, but ask a follow-up right after the card it builds on."""
+    ids = {c["id"] for c in selected}
+    children: dict[str, list[dict]] = {}
+    for c in selected:
+        p = parent_card(cards, c)
+        if p is not None and p["id"] in ids:
+            children.setdefault(p["id"], []).append(c)
+    out: list[dict] = []
+    placed: set[str] = set()
+
+    def place(c):
+        if c["id"] in placed:
+            return
+        placed.add(c["id"])
+        out.append(c)
+        for ch in children.get(c["id"], []):
+            place(ch)
+
+    for c in selected:
+        p = parent_card(cards, c)
+        if p is None or p["id"] not in ids:
+            place(c)
+    for c in selected:  # anything left (a cycle) keeps its place
+        place(c)
+    return out
 
 
 def pick_variant(card: dict) -> dict:
@@ -258,6 +292,10 @@ def card_from_check(topic: str, node: str, check: dict, existing_ids=()) -> dict
         "history": [], "suspended": False, "rubric_version": max(int(v["rubric_version"]) for v in variants),
         "key_history": [], "last_graduated": None,
     }
+    if check.get("follows"):
+        card["follows"] = check_key(node, check["follows"])
+    if check.get("context"):
+        card["context"] = str(check["context"]).strip()
     L.validate_card(card)
     return card
 
@@ -282,6 +320,30 @@ def find_by_check(deck: dict, topic: str, node: str, check_id: str) -> dict | No
     return None
 
 
+def parent_card(cards: list[dict], card: dict) -> dict | None:
+    """The card this one follows up on: `follows` is a card id or a check key in the same topic."""
+    ref = card.get("follows")
+    if not ref:
+        return None
+    for c in cards:
+        if c["id"] == ref and c is not card:
+            return c
+    for c in cards:
+        if c.get("topic") == card.get("topic") and c.get("check") == ref and c is not card:
+            return c
+    return None
+
+
+def recap(card: dict, parent: dict | None) -> str:
+    """One line telling the learner which earlier question this one builds on."""
+    text = str(card.get("context", "")).strip()
+    if not text and parent is not None:
+        text = " ".join(parent["question"].split())
+        if len(text) > 220:
+            text = text[:220].rsplit(" ", 1)[0] + " …"
+    return text
+
+
 # --- formatting --------------------------------------------------------------------
 
 def fmt_card(card: dict, full: bool = False) -> str:
@@ -304,6 +366,8 @@ def fmt_card(card: dict, full: bool = False) -> str:
         lines.append("Explanation: " + card["explanation"])
     if card.get("task"):
         lines.append("Task: " + card["task"])
+    if card.get("follows") or card.get("context"):
+        lines.append("Builds on: " + (card.get("follows") or "-") + (f" · {card['context']}" if card.get("context") else ""))
     if card.get("node"):
         lines.append("Node: " + card["node"] + (f" · check {card['check']}" if card.get("check") else ""))
     if len(card.get("variants", [])) > 1:
@@ -315,9 +379,14 @@ def fmt_card(card: dict, full: bool = False) -> str:
     return "\n".join(lines)
 
 
-def fmt_variant_for_chat(card: dict, variant: dict) -> str:
-    """Question text ready to paste: code as a fenced block, options lettered, 'I don't know' last."""
-    out = [variant["question"].strip()]
+def fmt_variant_for_chat(card: dict, variant: dict, parent: dict | None = None) -> str:
+    """Question text ready to paste: a reference to the question it builds on (if any),
+    code as a fenced block, options lettered, 'I don't know' last."""
+    out = []
+    ref = recap(card, parent)
+    if ref:
+        out.append(f"*Builds on an earlier question:* {ref}")
+    out.append(variant["question"].strip())
     if variant.get("code"):
         out.append("```c\n" + variant["code"].rstrip() + "\n```")
     if card["type"] == "mcq":
@@ -352,6 +421,10 @@ def cmd_add(args):
             "interval": 1, "ease": 2.5, "reps": 0, "lapses": 0, "history": [], "suspended": False,
             "rubric_version": 1, "key_history": [], "last_graduated": None,
         }
+        if args.follows:
+            card["follows"] = args.follows
+        if args.context:
+            card["context"] = args.context.strip()
         L.validate_card(card)
         if card["type"] == "code" and not card["task"]:
             print("warning: code card without --task path", file=sys.stderr)
@@ -393,7 +466,7 @@ def cmd_due(args):
             v = pick_variant(c)
             item = dict(c)
             item["ask_variant"] = v["id"]
-            item["ask_text"] = fmt_variant_for_chat(c, v)
+            item["ask_text"] = fmt_variant_for_chat(c, v, parent_card(deck["cards"], c))
             out.append(item)
         print(json.dumps({"date": on, "selected": out, "deferred": [c["id"] for c in deferred],
                           "minutes": round(minutes, 1), "budget": budget}, indent=2, ensure_ascii=False))
@@ -409,7 +482,7 @@ def cmd_due(args):
         v = pick_variant(card)
         print(fmt_card(card, full=True))
         if v["id"] != "v1" or card.get("variants"):
-            print(f"Ask variant {v['id']}:\n{fmt_variant_for_chat(card, v)}")
+            print(f"Ask variant {v['id']}:\n{fmt_variant_for_chat(card, v, parent_card(deck['cards'], card))}")
         print()
     if deferred:
         print("Deferred: " + ", ".join(f"{c['id']} ({c['type']}, due {c['due']})" for c in deferred))
@@ -540,6 +613,29 @@ def cmd_suspend(args, value=True):
         print(f"{card['id']} {'suspended' if value else 'active'}")
 
 
+def cmd_link(args):
+    with L.Store(write=True) as st:
+        card = find(st.deck, args.id)
+        if args.clear:
+            card.pop("follows", None)
+            card.pop("context", None)
+            st.commit()
+            print(f"{card['id']}: no longer a follow-up")
+            return
+        if not args.follows and not args.context:
+            raise L.LearnError("link needs --follows, --context or --clear")
+        if args.follows:
+            card["follows"] = args.follows
+            parent = parent_card(st.deck["cards"], card)
+            if parent is None:
+                raise L.LearnError(f"no card {args.follows!r} (id, or check key in topic {card['topic']})")
+            card["follows"] = parent["id"]
+        if args.context:
+            card["context"] = args.context.strip()
+        st.commit()
+        print(f"{card['id']} builds on: {recap(card, parent_card(st.deck['cards'], card))}")
+
+
 def cmd_amend_key(args):
     new = _read_stdin_json()
     with L.Store(write=True) as st:
@@ -567,6 +663,7 @@ def main(argv=None):
     p.add_argument("--q", required=True); p.add_argument("--a", required=True)
     p.add_argument("--points"); p.add_argument("--options"); p.add_argument("--task"); p.add_argument("--node"); p.add_argument("--due")
     p.add_argument("--check"); p.add_argument("--kind", default="concept", choices=["concept", "misconception", "procedure", "task"])
+    p.add_argument("--follows"); p.add_argument("--context")
     p.set_defaults(fn=cmd_add)
     p = sub.add_parser("promote"); p.add_argument("--op"); p.set_defaults(fn=cmd_promote)
     p = sub.add_parser("due"); p.add_argument("--topic"); p.add_argument("--limit", type=int); p.add_argument("--budget", type=float)
@@ -582,6 +679,8 @@ def main(argv=None):
     p = sub.add_parser("forecast"); p.add_argument("--days", type=int, default=14); p.set_defaults(fn=cmd_forecast)
     p = sub.add_parser("suspend"); p.add_argument("id"); p.set_defaults(fn=lambda a: cmd_suspend(a, True))
     p = sub.add_parser("unsuspend"); p.add_argument("id"); p.set_defaults(fn=lambda a: cmd_suspend(a, False))
+    p = sub.add_parser("link"); p.add_argument("id"); p.add_argument("--follows"); p.add_argument("--context")
+    p.add_argument("--clear", action="store_true"); p.set_defaults(fn=cmd_link)
     p = sub.add_parser("amend-key"); p.add_argument("id"); p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_amend_key)
     p = sub.add_parser("invalidate-key"); p.add_argument("id"); p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_invalidate_key)
     args = parser.parse_args(argv)
