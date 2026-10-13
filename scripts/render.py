@@ -22,8 +22,15 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(os.environ.get("CLAUDE_PROJECT_DIR") or pathlib.Path(__file__).resolve().parent.parent).resolve()
-MMDC = ROOT / "tools" / "node_modules" / ".bin" / "mmdc"
-CHROME_CANDIDATES = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome"]
+_MMDC_DIR = ROOT / "tools" / "node_modules" / ".bin"
+MMDC = next((_MMDC_DIR / n for n in ("mmdc.cmd", "mmdc.exe", "mmdc") if os.name == "nt" and (_MMDC_DIR / n).exists()), _MMDC_DIR / "mmdc")
+CHROME_CANDIDATES = ["google-chrome", "google-chrome-stable", "chromium", "chromium-browser", "chrome", "chrome.exe", "msedge.exe"]
+WINDOWS_CHROME_PATHS = [
+    r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+    r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+]
 
 
 def find_chrome() -> str | None:
@@ -34,6 +41,9 @@ def find_chrome() -> str | None:
         found = shutil.which(name)
         if found:
             return found
+    for path in WINDOWS_CHROME_PATHS:
+        if pathlib.Path(path).exists():
+            return path
     return None
 
 
@@ -62,6 +72,9 @@ def autocrop(png: pathlib.Path, margin: int = 24) -> None:
 
 
 def chrome_screenshot(chrome: str, url: str, out: pathlib.Path, width: int, height: int, budget_ms: int = 6000) -> subprocess.CompletedProcess:
+    # Chrome resolves --screenshot against its own cwd, so the path must be absolute.
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out = out.resolve()
     return run([
         chrome, "--headless=new", "--no-sandbox", "--disable-gpu", "--hide-scrollbars",
         "--force-device-scale-factor=2", f"--window-size={width},{height}",
