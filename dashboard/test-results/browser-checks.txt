@@ -1,0 +1,17 @@
+Title: Learning for Lunch · Learning Observatory Nodes: 4 Errors: []
+Completed visible step 1
+Completed visible step 2
+Completed visible step 3
+Completed visible step 4
+Completed visible step 5
+Completed visible step 6
+Completed visible step 7
+Completed visible step 8
+Completed visible step 9
+Completed visible step 10
+Completed visible step 11
+Completed visible step 12
+Completed visible step 13
+Completed visible step 14
+Browser errors: []
+UI integration checks PASSED. Navigation rendered in about:blank because of environment policy; HTTP calls reached real server.
