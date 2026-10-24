@@ -42,6 +42,7 @@ Socratic when the next step is reasonably discoverable from what the learner has
 | Pose a prepared check | `python3 scripts/state.py ask n7` (`--fresh`, `--check q2`, `--exit x1`, `--adhoc` with JSON on stdin) |
 | Give a hint | `python3 scripts/state.py hint` (records assistance; prints the next rung of the ladder) |
 | Save an answer turn | `python3 scripts/state.py record < result.json` (attempt + readiness + card + NEXT in one call) |
+| Learner disputes a grade ("a bit critical, make it a 4") | `regrade` skill: `python3 scripts/state.py regrade 4 --reason "..."` corrects the last grade, its card and readiness |
 | Multiple choice | The question comes from `ask`; paste it as printed. `AskUserQuestion` only for questions without code, one question per call |
 | Coding task | `code-task` skill |
 | A learner-supplied PDF or document | `source-add`, the `document-reader` subagent, `source-digest` during preparation; `source-show --node n7` while teaching (see "Documents") |

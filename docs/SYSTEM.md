@@ -84,6 +84,8 @@ Question text and keys are resolved from the prep files (or the inline `--adhoc`
 
 `q >= 3` always means: all required points met and assistance none or a wording clarification. `record` and `srs.py grade --assisted / --missing-required` clamp anything higher to 2 and note `capped`. Rubric feedback (what was missing) is separate from scheduling quality.
 
+Correcting a grade: `state.py regrade Q --reason "..." [--target ATTEMPT|CARD] [--independent]` changes the most recent grade (`state.last_grade`, set by `record` and `srs.py grade`) or the named attempt or card. The original quality, result and reason are kept in `regrades`. A lesson attempt moves to `pass` at 3+ (missed required points count as met) and to `partial`/`fail` below 3; its card entry (linked by `attempt`) is corrected and the card's schedule replayed from its valid history. Readiness (or retention for a review) is re-derived only when the grade crosses the 3 line and no later attempt on the node superseded this one; a practice or repair pass stays `provisional`. NEXT is recomputed only if no new question was asked since. 3+ on an answer given with hints needs `--independent` (the help was only a clarification; assistance becomes `clarify`). Regrading to the current grade is a no-op.
+
 ## Scheduling rules (SM-2 kept; the evidence fed to it fixed)
 
 - Attempt kinds: `initial` (the node's check), `practice`/`repair` (a reattempt right after an explanation), `review` (scheduled retrieval), `exit`.
@@ -118,7 +120,7 @@ Restore: `python3 scripts/state.py restore --list`, then `restore state/backups/
 
 ## Commands
 
-`state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `node-edit`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `correction`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `source-add`, `source-digest`, `source-show`, `ask`, `pending`, `answer`, `hint`, `record`.
+`state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `node-edit`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `correction`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `source-add`, `source-digest`, `source-show`, `ask`, `pending`, `answer`, `hint`, `record`, `regrade`.
 
 `srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `link`, `amend-key`, `invalidate-key`.
 

@@ -11,7 +11,7 @@ amosblomqvist/learn. Read this file fully; it is short and every rule matters.
 | `.claude/skills/review/` | Spaced-repetition review session. |
 | `.claude/skills/code-task/` | Creating, validating, checking and grading coding exercises. |
 | `.claude/skills/visualize/` | Adding one verified diagram to a lesson. |
-| `.claude/skills/status/`, `checkpoint/` | Show progress; save state between questions. |
+| `.claude/skills/status/`, `checkpoint/`, `regrade/` | Show progress; save state between questions; correct a grade the learner disputes. |
 | `.claude/agents/` | `researcher`, `document-reader`, `mermaid-maker`, `svg-maker` subagents. |
 | `scripts/state.py` | Lesson state: topics, plan, node evidence, prepared material, pending interaction, attempts. |
 | `scripts/srs.py` | The spaced-repetition deck (SM-2 with fixed evidence rules). |

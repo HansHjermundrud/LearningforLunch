@@ -156,6 +156,30 @@ def recompute_from_history(card: dict) -> None:
         card["due"] = L.date_add(L.today(), 1)
 
 
+def regrade_entry(card: dict, idx: int, q: int, reason: str, independent: bool = False) -> dict:
+    """Correct one graded attempt after the fact (the learner disputed the grade). The entry
+    keeps its original q under `regrades`; the schedule is replayed from the valid history.
+    q >= 3 on an entry capped for assistance needs `independent` (the help was only a
+    clarification); q >= 3 on an entry capped for a missing point asserts the point was met."""
+    q = _clamp_q(q)
+    history = card.get("history", [])
+    if not -len(history) <= idx < len(history):
+        raise L.LearnError(f"card {card['id']} has no attempt {idx}")
+    entry = history[idx]
+    if not entry.get("valid", True):
+        raise L.LearnError(f"card {card['id']} attempt {idx} no longer counts (key invalidated); nothing to regrade")
+    if q >= 3 and str(entry.get("capped", "")).startswith("assisted") and not independent:
+        raise L.LearnError("that answer was given with help; 3+ means no substantive help. "
+                           "Pass --independent if the help was only a wording clarification")
+    old = int(entry["q"])
+    entry.setdefault("regrades", []).append({"ts": L.ts(), "from": old, "to": q, "reason": reason})
+    entry["q"] = q
+    if q >= 3:
+        entry.pop("capped", None)
+    recompute_from_history(card)
+    return {"from": old, "to": q, "due": card["due"], "interval": card.get("interval"), "ease": card.get("ease")}
+
+
 def _snapshot_key(card: dict) -> dict:
     return {k: json.loads(json.dumps(card.get(k))) for k in ("question", "answer", "key_points", "options", "explanation", "variants", "rubric_version")}
 
@@ -500,6 +524,7 @@ def cmd_grade(args):
         if args.kind in ("initial", "review", "exit"):
             card.pop("needs_replacement_check", None)
         flagged = _update_retention(st.state, card, outcome["q"], args.kind)
+        st.state["last_grade"] = {"ts": L.ts(), "card": card["id"], "entry": len(card["history"]) - 1}
         st.commit(op_id=args.op)
         if flagged:
             print(flagged)

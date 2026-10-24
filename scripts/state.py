@@ -17,6 +17,7 @@ Usage (run from the repo root):
   next-node · ask NODE [--check ID] [--variant ID] [--fresh] [--kind K] [--exit ID] [--adhoc < q.json] [--replace]
   pending [--keys] · answer TEXT|--file F · hint [--level nudge|substep|worked]
   record < result.json   (one call: attempt + readiness + card + next step)
+  regrade Q --reason "..." [--target ATTEMPT|CARD] [--independent]   (correct the last grade; original kept)
   readiness ID VALUE --reason "..." · scope ID --optional|--required --reason "..."
   node-done ID "summary" [--check T] [--readiness R] · node-shaky ID "why" · node-edit ID [--label ..] [--depends a,b]
   correction "what" "why" [--node ID] [--card ID] [--sources a,b]
@@ -1404,6 +1405,17 @@ def _derive_quality(result: str, independent: bool, required_met_all: bool, give
     return max(q, 3), ""
 
 
+def _derive_readiness(check: dict, variant_id: str, result: str, independent: bool, assistance: str,
+                      missed: list, misconception: str) -> tuple[str, str]:
+    if result == "pass" and independent:
+        if check["type"] == "mcq" and check.get("load_bearing", False):
+            return "provisional", "multiple choice alone does not show independent reproduction"
+        return "ready", f"independent pass on {check['id']}/{variant_id}"
+    if result == "pass":
+        return "provisional", f"passed with help ({assistance})"
+    return "needs_repair", (misconception or f"{result} on {check['id']}: missed " + ", ".join(missed))
+
+
 def cmd_record(args):
     data = _stdin_json()
     with L.Store(write=True) as st:
@@ -1464,15 +1476,8 @@ def cmd_record(args):
             if not data.get("reason"):
                 raise L.LearnError("an explicit readiness needs a short reason")
             readiness, why = override, data["reason"]
-        elif result == "pass" and independent:
-            if check["type"] == "mcq" and check.get("load_bearing", False):
-                readiness, why = "provisional", "multiple choice alone does not show independent reproduction"
-            else:
-                readiness, why = "ready", f"independent pass on {check['id']}/{variant['id']}"
-        elif result == "pass":
-            readiness, why = "provisional", f"passed with help ({assistance})"
         else:
-            readiness, why = "needs_repair", (attempt["misconception"] or f"{result} on {check['id']}: missed " + ", ".join(missed))
+            readiness, why = _derive_readiness(check, variant["id"], result, independent, assistance, missed, attempt["misconception"])
         covered = data.get("covered", True)
         if covered and attempt["kind"] != "review":
             node["coverage"] = "covered"
@@ -1506,12 +1511,14 @@ def cmd_record(args):
             outcome = R.apply_grade(card, quality, L.today(), kind=skind, independent=independent, required_met=not missed,
                                     note=attempt["misconception"] or data.get("note", ""), variant=variant["id"], op=op)
             card.pop("needs_replacement_check", None)
+            card["history"][-1]["attempt"] = attempt["id"]
             attempt["card"] = card["id"]
             card_msg += f" graded {outcome['q']}: {outcome['reason']}; due {outcome['due']}"
         topic.setdefault("attempts", []).append(attempt)
         L.validate_attempt(attempt)
         p["stage"] = "completed"
         p["last_attempt"] = attempt["id"]
+        st.state["last_grade"] = {"ts": attempt["ts"], "topic": slug, "attempt": attempt["id"]}
         topic["next"] = data.get("next") or (
             f"Repair {p['node']}: {why}" if readiness == "needs_repair" and attempt["kind"] != "review" else next_text(topic, slug))
         _touch(topic, "record", f"{attempt['id']} {p['node']} {check['id']}/{variant['id']} {result} q{quality} help={assistance} -> {readiness}")
@@ -1522,6 +1529,138 @@ def cmd_record(args):
             card_msg,
             "NEXT: " + topic["next"],
         ] + ([_next_context(topic, slug)] if readiness != "needs_repair" and _next_context(topic, slug) else [])), op=op)
+
+
+def _attempt_check(topic: dict, slug: str, a: dict) -> dict:
+    """The check an attempt answered, as far as it can still be resolved (type and load_bearing matter)."""
+    p = topic.get("pending") or {}
+    try:
+        if p.get("id") == a.get("pending"):
+            return _resolve_variant(topic, slug, p)[0]
+        checks = exit_checks(topic, a["exit"])[1] if a.get("exit") else all_checks(topic, slug, a["node"])
+    except L.LearnError:
+        checks = []
+    return next((c for c in checks if c["id"] == a.get("check")), {"id": a.get("check", "?"), "type": "short"})
+
+
+def _regrade_target(st: L.Store, target: str | None) -> tuple[str, str, int | None]:
+    """('attempt', topic slug, None) / ('card', card id, history index) for an explicit id or the last grade."""
+    state = st.state
+    if target:
+        if any(c["id"] == target for c in st.deck["cards"]):
+            return "card", target, None
+        slug, _ = _topic(state)
+        return "attempt", slug, None
+    last = state.get("last_grade")
+    if last and last.get("card"):
+        return "card", last["card"], last.get("entry")
+    if last and last.get("topic") in state["topics"]:
+        return "attempt", last["topic"], None
+    slug, topic = _topic(state)
+    if not topic.get("attempts"):
+        raise L.LearnError("no grade to correct yet; name one with --target ATTEMPT_OR_CARD_ID")
+    return "attempt", slug, None
+
+
+def cmd_regrade(args):
+    """Correct the last grade (or --target) to Q: the attempt, its card's schedule, and readiness
+    and NEXT when nothing has superseded it. The original grade stays in `regrades`."""
+    q = int(args.q)
+    with L.Store(write=True) as st:
+        kind, ref, idx = _regrade_target(st, args.target)
+        if kind == "card":
+            card = R.find(st.deck, ref)
+            i = len(card.get("history", [])) - 1 if idx is None else idx
+            if i < 0:
+                raise L.LearnError(f"card {ref} has no graded attempts")
+            entry = card["history"][i]
+            if entry.get("attempt"):  # graded through a lesson attempt: correct that instead
+                kind, ref = "attempt", entry.get("topic") or card["topic"]
+                args.target = entry["attempt"]
+            else:
+                if int(entry["q"]) == q:
+                    print(f"already graded {q}; nothing changed")
+                    return
+                out = R.regrade_entry(card, i, q, args.reason, independent=args.independent)
+                last = i in (-1, len(card["history"]) - 1)
+                flagged = R._update_retention(st.state, card, q, entry.get("kind", "review")) if last else ""
+                st.commit()
+                print(f"{card['id']} {entry['date']} regraded {out['from']} -> {out['to']}; next due {out['due']} "
+                      f"(interval {out['interval']}d, ease {out['ease']})" + (f"\n{flagged}" if flagged else ""))
+                return
+        slug, topic = _topic(st.state, ref)
+        attempts = topic.get("attempts", [])
+        aid = args.target or (st.state.get("last_grade") or {}).get("attempt") or (attempts[-1]["id"] if attempts else "")
+        a = next((x for x in attempts if x["id"] == aid), None)
+        if a is None:
+            raise L.LearnError(f"no attempt or card {aid!r}")
+        old_q = int(a.get("quality", 0))
+        if old_q == q:
+            print(f"already graded {q}; nothing changed")
+            return
+        R._clamp_q(q)
+        assistance = a.get("assistance", "none")
+        if q >= 3 and not a.get("independent", True):
+            if not args.independent:
+                raise L.LearnError(f"that answer was given with help ({assistance}); 3+ means no substantive help. "
+                                   "Pass --independent if the help was only a wording clarification")
+            assistance = "clarify"
+        old_result = a["result"]
+        if q >= 3:
+            a["required_met"] = list(a.get("required_met", [])) + list(a.get("required_missed", []))
+            a["required_missed"] = []
+            result = "pass"
+        elif old_result == "pass" and a.get("independent", True):
+            result = "partial" if q == 2 else "fail"
+        else:
+            result = old_result
+        a.setdefault("regrades", []).append({"ts": L.ts(), "from": old_q, "to": q, "from_result": old_result, "reason": args.reason})
+        a.update({"quality": q, "result": result, "assistance": assistance, "independent": assistance in L.INDEPENDENT_ASSISTANCE})
+        a.pop("capped", None)
+        lines = [f"{a['id']}: {a['node']} {a['check']}/{a['variant']} regraded {old_q} -> {q}"
+                 + (f" ({old_result} -> {result})" if result != old_result else "")]
+        # the card entry this attempt graded
+        card = R.find(st.deck, a["card"]) if a.get("card") and any(c["id"] == a["card"] for c in st.deck["cards"]) else None
+        if card:
+            hist = card.get("history", [])
+            i = next((j for j, h in enumerate(hist) if h.get("attempt") == a["id"]), None)
+            if i is None and a.get("op"):
+                i = next((j for j, h in enumerate(hist) if h.get("op") == a["op"]), None)
+            if i is None:
+                day = a["ts"][:10]
+                i = next((j for j in range(len(hist) - 1, -1, -1) if hist[j]["date"] == day
+                          and hist[j].get("variant") == a["variant"] and hist[j].get("valid", True)), None)
+            if i is not None and hist[i].get("valid", True):
+                out = R.regrade_entry(card, i, q, args.reason, independent=True)
+                lines.append(f"card {card['id']} next due {out['due']} (interval {out['interval']}d)")
+            else:
+                lines.append(f"card {card['id']}: matching attempt not found; schedule unchanged")
+        # node state follows only if no later attempt on the node superseded this one
+        node = _find_node(topic, a["node"])
+        later = [x for x in attempts[attempts.index(a) + 1:]
+                 if x["node"] == a["node"] and (x["kind"] == "review") == (a["kind"] == "review")]
+        if not later and (q >= 3) != (old_q >= 3):
+            if a["kind"] == "review":
+                node["retention"] = "demonstrated" if result == "pass" and a["independent"] else "needs_review"
+                lines.append(f"{node['id']} retention -> {node['retention']}")
+            else:
+                check = _attempt_check(topic, slug, a)
+                readiness, why = _derive_readiness(check, a["variant"], result, a["independent"], a["assistance"],
+                                                   a["required_missed"], a.get("misconception", ""))
+                if readiness == "ready" and a["kind"] in ("practice", "repair"):
+                    readiness, why = "provisional", f"{a['kind']} pass after an explanation"
+                node["readiness"], node["readiness_note"] = readiness, f"{why} (regraded: {args.reason})"
+                lines.append(f"{node['id']} readiness -> {readiness}")
+        old_summary = f"{a['check']}/{a['variant']} {old_result} q{old_q}"
+        if not later and str(node.get("summary", "")).startswith(old_summary):
+            node["summary"] = f"{a['check']}/{a['variant']} {result} q{q}" + node["summary"][len(old_summary):]
+        p = topic.get("pending") or {}
+        if p.get("stage") == "completed" and p.get("last_attempt") == a["id"] and a["kind"] != "review":
+            topic["next"] = (f"Repair {a['node']}: {node.get('readiness_note', '')}" if node.get("readiness") == "needs_repair"
+                             else next_text(topic, slug))
+            lines.append("NEXT: " + topic["next"])
+        _touch(topic, "regrade", f"{a['id']} {old_q}->{q}: {args.reason}")
+        _save(st, "\n".join(lines))
 
 
 def _next_context(topic: dict, slug: str) -> str:
@@ -1592,6 +1731,8 @@ def main(argv=None):
     p = sub.add_parser("answer"); p.add_argument("text", nargs="?"); p.add_argument("--file"); p.set_defaults(fn=cmd_answer)
     p = sub.add_parser("hint"); p.add_argument("--level", choices=["nudge", "substep", "worked"]); p.set_defaults(fn=cmd_hint)
     sub.add_parser("record").set_defaults(fn=cmd_record)
+    p = sub.add_parser("regrade"); p.add_argument("q"); p.add_argument("--reason", required=True); p.add_argument("--target")
+    p.add_argument("--independent", action="store_true"); p.set_defaults(fn=cmd_regrade)
 
     args = parser.parse_args(argv)
     L.cli_main(lambda: args.fn(args))

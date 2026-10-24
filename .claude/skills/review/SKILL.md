@@ -33,6 +33,8 @@ Use the `ask_text` the `due --json` output gives you: it already picks the varia
 
 Then one command: `python3 scripts/srs.py grade <id> <q> --kind review --variant <variant> [--assisted] [--missing-required] [--note "..."]`. `--assisted` when you had to hint; `--missing-required` when a required point was missing; either caps the quality at 2, which is the documented meaning of 3+. A card whose key was corrected (`needs a fresh check` in `due`) is asked normally; its old attempts no longer count.
 
+If the learner thinks a grade was too harsh ("make that a 4"), use the `regrade` skill: `python3 scripts/state.py regrade 4 --reason "..."` corrects the last grade and replays the card's schedule.
+
 Never reveal the answer before the learner answers or gives up. If a wrong answer exposes a misconception likely to recur, append one dated line to `LEARNER.md` under "Standing notes". Do not announce grades' internals, card ids or scheduling.
 
 ## Finish

@@ -607,6 +607,66 @@ class TestSrsRules(Base):
         self.srs("grade", cid, "5", "--kind", "review", now="2026-09-28T10:00:00+02:00")
         self.assertEqual(self.node("n1")["retention"], "demonstrated")
 
+    def test_regrade_lesson_attempt_updates_attempt_card_readiness_and_next(self):
+        self.start_lesson()
+        self.state("ask", "n1")
+        self.record({"result": "partial", "required_missed": ["independent routing"]})
+        self.assertEqual(self.node("n1")["readiness"], "needs_repair")
+        self.assertIn("Repair n1", self.topic()["next"])
+        out = self.state("regrade", "4", "--reason", "learner: routing was implied").stdout
+        self.assertIn("regraded 2 -> 4", out)
+        a = self.topic()["attempts"][0]
+        self.assertEqual((a["result"], a["quality"], a["required_missed"]), ("pass", 4, []))
+        self.assertEqual(a["regrades"][0]["from"], 2)
+        n = self.node("n1")
+        self.assertEqual(n["readiness"], "ready")
+        self.assertTrue(n["summary"].startswith("q1/v1 pass q4"))
+        self.assertNotIn("Repair n1", self.topic()["next"])
+        c = self.deck_json()["cards"][0]
+        self.assertEqual((c["history"][0]["q"], c["reps"], c["lapses"], c["due"]), (4, 1, 0, "2026-09-26"))
+        self.assertIn("already graded 4", self.state("regrade", "4", "--reason", "again").stdout)
+        self.assertEqual(len(self.topic()["attempts"][0]["regrades"]), 1)
+
+    def test_regrade_of_assisted_answer_needs_independent(self):
+        self.start_lesson()
+        self.state("ask", "n1")
+        self.state("hint")
+        self.state("hint")
+        self.record({"result": "pass", "quality": 5})
+        res = self.state("regrade", "4", "--reason", "too strict", expect=1)
+        self.assertIn("--independent", res.stderr)
+        self.state("regrade", "4", "--reason", "hint only rephrased the question", "--independent")
+        a = self.topic()["attempts"][0]
+        self.assertEqual((a["quality"], a["assistance"], a["independent"]), (4, "clarify", True))
+        self.assertEqual(self.node("n1")["readiness"], "ready")
+
+    def test_regrade_review_grade_undoes_lapse_and_retention(self):
+        self.start_lesson()
+        self.state("ask", "n1")
+        self.record({"result": "pass", "quality": 5})
+        cid = self.deck_json()["cards"][0]["id"]
+        later = "2026-09-26T10:00:00+02:00"
+        self.srs("grade", cid, "2", "--kind", "review", now=later)
+        c = self.card(cid)
+        self.assertEqual((c["lapses"], c["due"]), (1, "2026-09-27"))
+        self.assertEqual(self.node("n1")["retention"], "needs_review")
+        self.state("regrade", "4", "--reason", "learner: the answer met the key", now=later)
+        c = self.card(cid)
+        self.assertEqual((c["history"][-1]["q"], c["lapses"], c["reps"], c["interval"], c["due"]), (4, 0, 2, 6, "2026-10-02"))
+        self.assertEqual(self.node("n1")["retention"], "demonstrated")
+        self.assertEqual(self.topic()["attempts"][0]["quality"], 5, "the lesson attempt is untouched")
+
+    def test_regrade_older_attempt_leaves_superseded_readiness(self):
+        self.start_lesson()
+        self.state("ask", "n1")
+        self.record({"result": "fail"})
+        first = self.topic()["attempts"][0]["id"]
+        self.state("ask", "n1", "--kind", "repair")
+        self.record({"result": "pass", "readiness": "provisional", "reason": "repair pass"})
+        self.state("regrade", "4", "--reason", "first answer was fine", "--target", first)
+        self.assertEqual(self.topic()["attempts"][0]["quality"], 4)
+        self.assertEqual(self.node("n1")["readiness"], "provisional", "a later attempt decides readiness")
+
     def test_review_grade_updates_node_retention_not_readiness(self):
         self.start_lesson()
         self.state("ask", "n1")
