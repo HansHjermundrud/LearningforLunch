@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A local observatory for the actual LearningforLunch teaching and review engine.">
+  <title>Learning for Lunch · Learning Observatory</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#content">Skip to lesson</a>
+<aside class="sidebar" aria-label="Main navigation">
+  <div class="brand"><span class="brand-mark" aria-hidden="true">L<span>↗</span></span><div>Learning<br>for Lunch<span class="brand-caption">LEARNING OBSERVATORY</span></div></div>
+  <div class="nav-caption">EXPLORE THE SYSTEM</div>
+  <nav id="navigation">
+    <button data-view="classroom" class="nav-link active"><span>◫</span>Live classroom</button>
+    <button data-view="evidence" class="nav-link"><span>▤</span>Evidence ledger</button>
+    <button data-view="review" class="nav-link"><span>↻</span>Review lab</button>
+    <button data-view="architecture" class="nav-link"><span>⌘</span>How it works</button>
+    <button data-view="trace" class="nav-link"><span>›_</span>Engine trace</button>
+  </nav>
+  <div class="sidebar-bottom"><div class="local-mark"><i></i> RUNS ON YOUR COMPUTER</div><p>Actual Python engine.<br>Visible learning evidence.<br>No API key needed for demo.</p><button class="text-button" id="help">Setup & presentation guide ↗</button><div class="sidebar-version">LOCAL EDITION · 1.0</div></div>
+</aside>
+<div class="shell">
+  <header class="topbar">
+    <div class="breadcrumb">Observatory <span>/</span> <strong id="page-name">Live classroom</strong></div>
+    <div class="toolbar">
+      <div class="mode-switch" aria-label="Data source"><button id="mode-demo" class="selected" aria-pressed="true">Isolated demo</button><button id="mode-live" aria-pressed="false">Live project</button></div>
+      <span class="connection" id="connection"><i></i>Connecting</span>
+      <button class="icon-button" id="present" title="Presentation mode (F)" aria-label="Toggle presentation mode">⛶</button>
+      <button class="icon-button" id="refresh" title="Refresh" aria-label="Refresh current state">↻</button>
+    </div>
+  </header>
+  <nav class="presentation-nav" id="presentation-nav" aria-label="Presentation navigation"></nav>
+  <main id="content" tabindex="-1"><div class="loading"><span class="spinner"></span><h1>Opening the learning observatory</h1><p>Reading the project's saved state and prepared material.</p></div></main>
+  <footer><span id="footer-source">Local data only</span><span>Observed state, not hidden model reasoning.</span></footer>
+</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<dialog id="modal"><div class="modal-head"><div><div class="eyebrow" id="modal-eyebrow">INSPECT THE SYSTEM</div><h2 id="modal-title"></h2></div><button class="icon-button" id="modal-close" aria-label="Close dialog">×</button></div><div id="modal-body"></div></dialog>
+<div id="busy-overlay" class="busy-overlay" hidden><div><span class="spinner"></span><strong>Running the real engine</strong><p id="busy-label">The view updates after the command commits.</p></div></div>
+<noscript>This interactive dashboard requires JavaScript. Run dashboard/server.py and open the localhost address it prints.</noscript>
+</body>
+</html>

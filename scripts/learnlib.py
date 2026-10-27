@@ -26,6 +26,17 @@ import sys
 import tempfile
 import time
 
+def _force_utf8() -> None:
+    """Windows consoles and pipes default to cp1252; every summary here is UTF-8."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001
+            pass
+
+
+_force_utf8()
+
 ROOT = pathlib.Path(
     os.environ.get("CLAUDE_PROJECT_DIR") or pathlib.Path(__file__).resolve().parent.parent
 ).resolve()

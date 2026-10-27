@@ -178,6 +178,23 @@ bash scripts/selftest.sh
 
 This runs a smoke test in a temporary copy with its own configuration, then the regression suite in `scripts/tests/`. Neither touches your configured vault or live state.
 
+The dashboard has its own suite: `python3 dashboard/tests/test_dashboard.py`.
+
+## Presentation dashboard (optional)
+
+`dashboard/` is a separate, optional browser layer for presenting and observing the tutor. The tutor does not need it, and it is not used during teaching.
+
+```bash
+python3 dashboard/server.py        # Windows: py dashboard/server.py, or "Start dashboard.bat"
+```
+
+It opens http://localhost:8765 and offers two modes:
+
+- **Isolated demo** (default): copies `scripts/` into `.dashboard-local/` (gitignored) and runs a prepared fractions lesson through the real engine commands. The answers and assessments are scripted, no model is called, and your own `state/` and notes are never touched.
+- **Live project**: a read-only view of the state of the checkout given with `--project`, refreshed while you teach in Claude Code. Browser controls that write to it require `--enable-live-controls`.
+
+See `START_HERE.md` for a quick start, `dashboard/README.md` for details, and `dashboard/PRESENTER_NOTES.md` for a presentation script.
+
 ## Architecture
 
 Claude Code provides the teaching interface. Skills define the lesson and assessment workflows, while Python scripts handle persistence, scheduling, and exercise execution.
@@ -213,6 +230,7 @@ Claude Code provides the teaching interface. Skills define the lesson and assess
 | `exercises/` | Coding tasks, starter files, and tests, generated per lesson. Local only (gitignored). |
 | `resources/` | Learner-supplied documents such as lecture notes and syllabi. Local only (gitignored). |
 | `tools/` | Mermaid CLI dependencies and npm lockfile. |
+| `dashboard/` | Optional presentation dashboard (server, web app, tests, presenter notes). Its sandbox `.dashboard-local/` is gitignored. |
 | `learn.config.example.json` | Template for `learn.config.json`: folder paths, time zone, and checkpoint interval. |
 | `LEARNER.example.md` | Template for `LEARNER.md`: learner profile, preferences, and standing notes. |
 | `CLAUDE.md` | Tutor instructions loaded each session. |

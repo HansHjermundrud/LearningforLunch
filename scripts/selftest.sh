@@ -6,6 +6,8 @@
 set -euo pipefail
 SRC="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"
+# Git Bash on Windows: Python needs the native form of the path (C:/...), not /tmp/...
+if command -v cygpath >/dev/null 2>&1; then TMP="$(cygpath -m "$TMP")"; fi
 trap 'rm -rf "$TMP"' EXIT
 mkdir -p "$TMP/scripts"
 cp "$SRC"/scripts/*.py "$TMP/scripts/"
@@ -72,6 +74,7 @@ $S validate
 $S history
 test -f state/progress.md && echo "progress.md ok"
 NOTE=$(python3 -c "import json;print(json.load(open('state/state.json'))['topics']['tcp-reliability']['note'])")
+NOTE="$(printf '%s' "$NOTE" | tr '\134' '/')"  # Windows: backslashes to slashes
 test -f "$NOTE" && echo "note ok: $NOTE"
 case "$NOTE" in "$TMP"/*) echo "note is inside the temp root: ok";; *) echo "FAIL: note escaped the temp root"; exit 1;; esac
 

@@ -1104,7 +1104,7 @@ def cmd_source_add(args):
     if not sid[0].isalpha():
         sid = "d" + sid[:31]
     try:
-        stored = str(path.resolve().relative_to(L.ROOT))
+        stored = path.resolve().relative_to(L.ROOT).as_posix()
     except ValueError:
         stored = str(path)
     with L.Store(write=True) as st:

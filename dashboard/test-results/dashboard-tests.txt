@@ -1,0 +1,26 @@
+test_01_real_preparation_and_source_copy (test_dashboard.IntegrationTests.test_01_real_preparation_and_source_copy) ... ok
+test_02_pending_answer_and_assessment_are_separate (test_dashboard.IntegrationTests.test_02_pending_answer_and_assessment_are_separate) ... ok
+test_03_failed_prerequisite_does_not_block_unrelated_branch (test_dashboard.IntegrationTests.test_03_failed_prerequisite_does_not_block_unrelated_branch) ... ok
+test_04_recovery_hook_preserves_pending_and_revision (test_dashboard.IntegrationTests.test_04_recovery_hook_preserves_pending_and_revision) ... ok
+test_05_real_hint_caps_quality_and_readiness (test_dashboard.IntegrationTests.test_05_real_hint_caps_quality_and_readiness) ... ok
+test_06_finish_and_actual_review_intervals (test_dashboard.IntegrationTests.test_06_finish_and_actual_review_intervals) ... ok
+test_07_later_failure_changes_retention_not_coverage_or_readiness (test_dashboard.IntegrationTests.test_07_later_failure_changes_retention_not_coverage_or_readiness) ... ok
+test_08_live_read_is_non_mutating (test_dashboard.IntegrationTests.test_08_live_read_is_non_mutating) ... ok
+test_09_corrupt_live_state_is_not_overwritten (test_dashboard.IntegrationTests.test_09_corrupt_live_state_is_not_overwritten) ... ok
+test_10_stale_revision_rejected_inside_engine_write_lock (test_dashboard.IntegrationTests.test_10_stale_revision_rejected_inside_engine_write_lock) ... ok
+test_11_http_boundaries_and_export (test_dashboard.IntegrationTests.test_11_http_boundaries_and_export) ... [13/Oct/2026 11:19:44] "GET /api/bootstrap HTTP/1.1" 200 -
+[13/Oct/2026 11:19:44] "POST /api/action HTTP/1.1" 403 -
+[13/Oct/2026 11:19:44] "POST /api/action HTTP/1.1" 403 -
+[13/Oct/2026 11:19:44] "GET /api/source?file=../../LEARNER.md HTTP/1.1" 409 -
+[13/Oct/2026 11:19:44] "GET /../../LEARNER.md HTTP/1.1" 404 -
+[13/Oct/2026 11:19:44] "GET /api/source?file=state HTTP/1.1" 200 -
+[13/Oct/2026 11:19:44] "GET /api/export?mode=demo HTTP/1.1" 200 -
+ok
+test_12_practice_success_does_not_inflate_interval (test_dashboard.IntegrationTests.test_12_practice_success_does_not_inflate_interval) ... ok
+test_13_manual_assessment_uses_recorded_help (test_dashboard.IntegrationTests.test_13_manual_assessment_uses_recorded_help) ... ok
+test_14_opt_in_live_controls_and_safe_reset (test_dashboard.IntegrationTests.test_14_opt_in_live_controls_and_safe_reset) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 29.378s
+
+OK

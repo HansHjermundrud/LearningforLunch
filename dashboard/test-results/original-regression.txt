@@ -1,0 +1,19 @@
+......../usr/lib/python3.13/unittest/case.py:606: ResourceWarning: unclosed file <_io.TextIOWrapper name=3 encoding='utf-8'>
+  if method() is not None:
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+....................................F............
+======================================================================
+FAIL: test_selftest_never_touches_absolute_configured_paths (test_learning.TestSelftestIsolation.test_selftest_never_touches_absolute_configured_paths)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/mnt/data/dashboard_build/LearningforLunch/scripts/tests/test_learning.py", line 756, in test_selftest_never_touches_absolute_configured_paths
+    self.assertEqual(res.returncode, 0, res.stdout[-3000:] + res.stderr[-2000:])
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 2 != 0 : /tmp/learn-test-8foripyv/repo/scripts/selftest.sh: line 6: set: pipefail
+: invalid option name
+
+
+----------------------------------------------------------------------
+Ran 57 tests in 370.784s
+
+FAILED (failures=1)
