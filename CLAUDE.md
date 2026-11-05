@@ -26,6 +26,14 @@ amosblomqvist/learn. Read this file fully; it is short and every rule matters.
 
 Paths for notes, diagrams and reviews come from `learn.config.json`. Never hard-code them.
 
+## The learner profile
+
+The profile is imported here so it is in context in every session (Claude Code skips the import
+if the local file does not exist yet; create it from `LEARNER.example.md`). Its preferences
+override the teach skill's defaults, for example when to pose a check.
+
+@LEARNER.md
+
 ## Two kinds of request
 
 - A question or a request for a quick explanation gets a direct, well-made answer. No probing, no plan, no card, no state command.
