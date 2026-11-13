@@ -1234,7 +1234,7 @@ def _question_text(ptype: str, variant: dict, order: list[str] | None) -> str:
         out.append("```c\n" + variant["code"].rstrip() + "\n```")
     if ptype == "mcq":
         opts = order or variant.get("options", [])
-        out.append("\n".join(f"{chr(65 + i)}) {o}" for i, o in enumerate(opts)))
+        out.append("\n".join(f"{chr(65 + i)}) {L.strip_option_label(o)}" for i, o in enumerate(opts)))
     return "\n\n".join(out)
 
 
@@ -1281,7 +1281,7 @@ def cmd_ask(args):
         pid = L.new_id("p", {a.get("pending", "") for a in attempts})
         order = None
         if check["type"] == "mcq":
-            opts = [o for o in variant.get("options", []) if o.strip().lower() != "i don't know"]
+            opts = [L.strip_option_label(o) for o in variant.get("options", []) if not L.is_idk(o)]
             rnd = random.Random(pid)
             rnd.shuffle(opts)
             order = opts + ["I don't know"]

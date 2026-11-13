@@ -454,6 +454,19 @@ class TestSrsRules(Base):
     def card(self, cid):
         return next(c for c in self.deck_json()["cards"] if c["id"] == cid)
 
+    def test_prelettered_mcq_options_are_lettered_once(self):
+        cid = self.srs("add", "--topic", "t", "--type", "mcq", "--q", "Which?", "--a", "B) right",
+                       "--options", "A) wrong|B) right|C) also wrong|D) I don't know").stdout.strip()
+        c = self.card(cid)
+        self.assertEqual(c["options"], ["wrong", "right", "also wrong", "I don't know"])
+        self.assertEqual(c["answer"], "right")
+        text = next(x for x in json.loads(self.srs("due", "--json", now="2026-09-27T09:00:00+02:00").stdout)["selected"]
+                    if x["id"] == cid)["ask_text"]
+        opts = [l for l in text.splitlines() if l[:2] in ("A)", "B)", "C)", "D)", "E)")]
+        self.assertEqual(len(opts), 4, text)
+        self.assertEqual(opts[-1], "D) I don't know")
+        self.assertFalse(any(l[3:].lstrip()[:2] in ("A)", "B)", "C)", "D)") for l in opts), text)
+
     def test_same_day_success_does_not_graduate_twice(self):
         cid = self.make_card()
         self.srs("grade", cid, "5", "--kind", "initial")

@@ -600,6 +600,28 @@ def validate_plan(nodes: list[dict]) -> None:
         raise ValidationError(f"plan has a dependency cycle involving {stuck}")
 
 
+_OPTION_LABEL = re.compile(r"^\s*\(?[A-H]\)\s+")
+IDK = "I don't know"
+
+
+def strip_option_label(text) -> str:
+    """'B) a is shared' -> 'a is shared'. Options are stored unlettered; the formatters
+    shuffle and letter them, so a stored label would show up twice."""
+    return _OPTION_LABEL.sub("", str(text)).strip()
+
+
+def is_idk(text) -> bool:
+    return strip_option_label(text).lower() == IDK.lower()
+
+
+def normalize_mcq(v: dict) -> None:
+    """Strip stored letter labels from an mcq's options and answer (in place)."""
+    if v.get("options"):
+        v["options"] = [strip_option_label(o) for o in v["options"]]
+    if isinstance(v.get("answer"), str) and v.get("options"):
+        v["answer"] = strip_option_label(v["answer"])
+
+
 def validate_variant(v: dict, ctype: str, where: str) -> None:
     if not isinstance(v, dict):
         raise ValidationError(f"{where}: variant must be an object")
@@ -608,6 +630,7 @@ def validate_variant(v: dict, ctype: str, where: str) -> None:
     if not str(v.get("question", "")).strip():
         raise ValidationError(f"{where}/{v['id']}: question is empty")
     if ctype == "mcq":
+        normalize_mcq(v)
         opts = v.get("options") or []
         if len(opts) < 2:
             raise ValidationError(f"{where}/{v['id']}: mcq needs at least 2 options")
@@ -755,6 +778,8 @@ def validate_card(card: dict) -> None:
             raise ValidationError(f"card missing {field}")
     if card["type"] not in CHECK_TYPES:
         raise ValidationError(f"card {card['id']}: type must be one of {CHECK_TYPES}")
+    if card["type"] == "mcq":
+        normalize_mcq(card)
     if card["type"] == "mcq" and card.get("options") and card["answer"] not in card["options"]:
         raise ValidationError(f"card {card['id']}: mcq answer must equal one option exactly")
     for v in card.get("variants", []) or []:

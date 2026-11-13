@@ -414,9 +414,9 @@ def fmt_variant_for_chat(card: dict, variant: dict, parent: dict | None = None) 
     if variant.get("code"):
         out.append("```c\n" + variant["code"].rstrip() + "\n```")
     if card["type"] == "mcq":
-        opts = [o for o in variant.get("options", []) if o.lower() != "i don't know"]
+        opts = [L.strip_option_label(o) for o in variant.get("options", []) if not L.is_idk(o)]
         random.shuffle(opts)
-        opts.append("I don't know")
+        opts.append(L.IDK)
         out.append("\n".join(f"{chr(65 + i)}) {o}" for i, o in enumerate(opts)))
     return "\n\n".join(out)
 
