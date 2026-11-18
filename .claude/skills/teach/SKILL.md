@@ -122,3 +122,5 @@ When every required node is covered: the exit check, one prepared exit question 
 - Math is LaTeX: `$f(x)$` inline, `$$ ... $$` displayed.
 - Code always in fenced blocks with the language, one statement per line, pragmas on their own lines. Never inside `AskUserQuestion` or inline backticks.
 - Use the injected date for anything dated.
+- Questions in plain sentences that read once: name the thing, then what happens to it ("which row does the message from the rank below land in?"). No stacked prepositions or compressed jargon ("receive into from below", "send down into").
+- Never ask the learner to fill in an ASCII table or blanks inside a code block; it is awkward to type in a terminal. Ask for a short list, one line per item ("row 0: ghost, cur + 0*W").
