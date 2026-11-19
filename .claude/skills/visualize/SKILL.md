@@ -1,38 +1,38 @@
 ---
 name: visualize
-description: Add one correct, minimal diagram to a lesson when an idea is genuinely clearer as a picture - a dependency graph, flow, sequence, state machine, tree, comparison, or a spatial/geometric figure. Delegates authoring and visual verification to a maker subagent, then embeds the result so it renders in the Obsidian note.
+description: Adds one minimal, verified diagram to a lesson when the idea really is easier to grasp as a picture - a dependency or precedence graph, a flow or sequence, a state machine, a tree, a side-by-side comparison, or a spatial or geometric figure. A maker subagent draws and visually checks it; the result is embedded so the Obsidian note renders it.
 argument-hint: <what the picture must show>
 ---
 
 # Visualize
 
-A picture earns its place only when it shows something words cannot: shape, structure, direction, relationship, geometry. This skill produces one such picture, guarantees it is correct (the maker renders it and looks at it before returning), and drops it into the lesson so it renders in the note.
+Use a picture only for what text conveys badly: structure, shape, direction, relations between parts, geometry. This skill gets one such picture made, checked (the maker renders it and inspects the image before handing it back) and placed in the lesson, where the note renders it.
 
-You are the creative director. You decide the exact idea and cut it to the fewest carrying elements. A maker subagent authors, renders, verifies and returns. You embed.
+You set the brief: pick the one idea and strip it down to the elements that carry it. A maker subagent writes, renders and checks the picture. You put it into the lesson.
 
 ## When
 
-Reach for a picture when the idea is a structure (dependencies, a system with parts and arrows, a pipeline, an exchange over time, states, a hierarchy, a containment) or is spatial (coordinates, a number line, vectors, the shape of a function, a physical arrangement). Do not visualize when prose or one equation already carries it. When in doubt, don't: a missing visual is cheaper than a false one.
+Use one when the idea has structure (a dependency or precedence graph, components connected by arrows, a pipeline, messages exchanged over time, states, a hierarchy, nesting) or is spatial (a coordinate system, a number line, vectors, a function's graph, a physical layout). Skip it when a sentence or a single equation does the job. If unsure, leave it out: no picture costs less than a wrong one.
 
 ## Choose the maker
 
-- `mermaid-maker` for nodes and edges. Default. It returns Mermaid source; the note renders Mermaid natively, so you paste the source into your reply inside a ```mermaid fence.
-- `svg-maker` for positions and shapes. It saves an SVG file into the vault's diagram folder and returns the filename; you embed `![[<file>.svg|500]]`.
+- `mermaid-maker`, the default, for anything made of nodes and edges. It hands back Mermaid source; paste it into your reply inside a ```mermaid fence and the note renders it.
+- `svg-maker` when exact position or shape matters. It writes an SVG file into the vault's diagram folder and hands back the filename; embed it with `![[<file>.svg|500]]`.
 
-## Brief the maker well
+## Writing the brief
 
-The most common failure is cramming. Before briefing, prune: for each element ask "if I delete this, is the idea still clear?" If yes, delete it. Give the concept and the concrete elements, not a vague topic and not a checklist. More than about 7 elements means cut first.
+Overcrowding is what usually goes wrong. Trim before you brief: for each element, would the point survive without it? If so, remove it. Name the idea and the specific elements, not a broad subject and not a feature list. If you count more than about 7 elements, trim first.
 
-Bad: "make a diagram about how TCP works".
-Good: "graph TD: a node 'packet' at the top; arrows down to 'ordering' and 'retransmit on loss'; both arrows down into 'reliable stream'. No title. Show that reliability is built FROM packets, not alongside them."
+Weak brief: "draw a diagram about serializability".
+Strong brief: "graph LR: nodes 'T1', 'T2', 'T3'; arrow T1 -> T3 labelled 'r1(x) before w3(x)'; arrow T2 -> T3 labelled 'w2(y) before r3(y)'. No title. Show that T3 must come after both, while T1 and T2 have no order between them."
 
 ## Invoke
 
-Use the Agent tool with `subagent_type` set to `mermaid-maker` or `svg-maker` and the brief as the prompt. The maker renders with `scripts/render.py`, looks at the PNG, iterates, and ends with a `RESULT:` block. Never hand-author or fake a diagram yourself; correctness depends on the render-and-inspect loop.
+Call the Agent tool with `subagent_type` `mermaid-maker` or `svg-maker` and the brief as the prompt. The maker renders through `scripts/render.py`, inspects the PNG, revises, and finishes with a `RESULT:` block. Do not write or imitate a diagram yourself: it is only trustworthy because the maker rendered and inspected it.
 
 ## Embed
 
-- Mermaid: introduce the picture in one sentence, then the ```mermaid block with the returned source verbatim. Do not narrate every element back in prose.
-- SVG: `![[<file>.svg|500]]`. The Stop hook mirrors your reply into the note, and Obsidian resolves the embed by filename because the diagram folder is inside the vault (see `vizDir` in `learn.config.json`).
+- Mermaid: one sentence saying what the picture shows, then a ```mermaid block containing the returned source unchanged. Don't walk through the elements again in prose.
+- SVG: `![[<file>.svg|500]]`. The Stop hook copies your reply into the note, and since the diagram folder lives inside the vault, Obsidian finds the file by name (see `vizDir` in `learn.config.json`).
 
-If the maker returns `status: none`, simplify the brief or decide the picture is not worth it.
+If the maker returns `status: none`, make the brief simpler or drop the picture.
