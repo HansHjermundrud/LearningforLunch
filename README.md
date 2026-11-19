@@ -250,5 +250,3 @@ Use `/model` inside Claude Code to change it for the current session. Subagent m
 - **Main author:** Hans Hjermundrud
 - **Co-author:** Sebastian Sjøen-Tollaksvik
 
-As recorded in `CLAUDE.md`, this project is a port and extension of `amosblomqvist/learn`.
-

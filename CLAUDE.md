@@ -1,7 +1,7 @@
 # Learning system
 
-This repository turns Claude Code into a personal tutor. It is a port and extension of
-amosblomqvist/learn. Read this file fully; it is short and every rule matters.
+This repository turns Claude Code into a personal tutor. Read this file fully; it is short
+and every rule matters.
 
 ## What lives where
 
