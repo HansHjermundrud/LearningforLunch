@@ -25,7 +25,7 @@ Use the `ask_text` the `due --json` output gives you: it already picks the varia
 
 **Feedback after each answer** (short and mcq; for code, after the check). Aim for about 4-8 lines, never a re-lesson:
 
-1. **Verdict** in a few words (right, mostly right, partly, not yet). No number.
+1. **Verdict** in a few words plus the 0-5 grade you will record, on one line: "Mostly right · 3/5". Always show the number; the learner wants to see it and dispute it with `regrade`. Say the grade before running `grade`, and use the same number.
 2. **What you got right**: name the specific points their answer hit, quoting their own words where it helps.
 3. **What was missing or off**: each gap in one sentence with *why it matters* (what goes wrong or gets confused without it). Separate gaps the question asked for from useful extras it did not ask for; label extras as extras, they cost no grade.
 4. **Model answer**: the key's answer, condensed to two or three sentences.
@@ -35,7 +35,7 @@ Then one command: `python3 scripts/srs.py grade <id> <q> --kind review --variant
 
 If the learner thinks a grade was too harsh ("make that a 4"), use the `regrade` skill: `python3 scripts/state.py regrade 4 --reason "..."` corrects the last grade and replays the card's schedule.
 
-Never reveal the answer before the learner answers or gives up. If a wrong answer exposes a misconception likely to recur, append one dated line to `LEARNER.md` under "Standing notes". Do not announce grades' internals, card ids or scheduling.
+Never reveal the answer before the learner answers or gives up. If a wrong answer exposes a misconception likely to recur, append one dated line to `LEARNER.md` under "Standing notes". The 0-5 grade is shown; flags, card ids, intervals and scheduling are not.
 
 ## Finish
 
