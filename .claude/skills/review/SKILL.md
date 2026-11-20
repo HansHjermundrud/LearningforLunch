@@ -23,15 +23,20 @@ Use the `ask_text` the `due --json` output gives you: it already picks the varia
 - **mcq**: 5 if right, 2 if wrong, 0 for "I don't know". Give feedback as below: why the right option is right and, if they picked a wrong one, what flaw in that option makes it wrong.
 - **code**: show the task summary and folder. Ask for a fresh file inside that folder (`retry-<today>.c`) or, if time is short, an explanation of the approach (that is different evidence; grade it as an explanation, at most 4). When they say done: `python3 scripts/exercise.py check <folder> --file retry-<today>.c`. Passing runs do not prove race-freedom: ask what synchronizes what.
 
+**Turn order after each answer (the learner only reliably sees your final message).** Text written before a tool call ends up above the tool output and the learner does not see it. So:
+
+1. Decide the grade silently, then run the tool calls first, with no learner-facing prose before or between them: the `grade` command (below) and, if another card follows, read that card's `ask_text`.
+2. Then write ONE final message containing, in this order: the feedback for the card just answered, a `---` separator, and the next card's question. Never split the feedback and the next card across messages, and never put the feedback before a tool call.
+
 **Feedback after each answer** (short and mcq; for code, after the check). Aim for about 4-8 lines, never a re-lesson:
 
-1. **Verdict** in a few words plus the 0-5 grade you will record, on one line: "Mostly right · 3/5". Always show the number; the learner wants to see it and dispute it with `regrade`. Say the grade before running `grade`, and use the same number.
+1. **Verdict** in a few words plus the 0-5 grade you recorded, on one line: "Mostly right · 3/5". Always show the number; the learner wants to see it and dispute it with `regrade`. It must be the same number you passed to `grade`.
 2. **What you got right**: name the specific points their answer hit, quoting their own words where it helps.
 3. **What was missing or off**: each gap in one sentence with *why it matters* (what goes wrong or gets confused without it). Separate gaps the question asked for from useful extras it did not ask for; label extras as extras, they cost no grade.
 4. **Model answer**: the key's answer, condensed to two or three sentences.
 5. If the answer showed a likely misconception, name it in one line ("this mixes up X and Y").
 
-Then one command: `python3 scripts/srs.py grade <id> <q> --kind review --variant <variant> [--assisted] [--missing-required] [--note "..."]`. `--assisted` when you had to hint; `--missing-required` when a required point was missing; either caps the quality at 2, which is the documented meaning of 3+. A card whose key was corrected (`needs a fresh check` in `due`) is asked normally; its old attempts no longer count.
+The grade command (run it before writing the feedback, see the turn order above): `python3 scripts/srs.py grade <id> <q> --kind review --variant <variant> [--assisted] [--missing-required] [--note "..."]`. `--assisted` when you had to hint; `--missing-required` when a required point was missing; either caps the quality at 2, which is the documented meaning of 3+. A card whose key was corrected (`needs a fresh check` in `due`) is asked normally; its old attempts no longer count.
 
 If the learner thinks a grade was too harsh ("make that a 4"), use the `regrade` skill: `python3 scripts/state.py regrade 4 --reason "..."` corrects the last grade and replays the card's schedule.
 
