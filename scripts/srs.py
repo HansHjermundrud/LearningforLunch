@@ -24,6 +24,7 @@ Scheduling rules (deck v2):
   - a success on a day the card already advanced is history only
   - a review before the due date does not advance the schedule (early review)
   - any failure is a lapse: interval 1, due tomorrow, ease down
+  - the first pass after a lapse waits 3 days for q 4-5 (1 day for q 3); then 6 days, then interval x ease
   - the same --op id applied twice is a no-op
   - days follow the configured timezone; LEARN_NOW=<iso> injects the clock
 
@@ -39,6 +40,7 @@ Usage (from the repo root):
   python3 scripts/srs.py forecast [--days 14]
   python3 scripts/srs.py suspend ID | unsuspend ID
   python3 scripts/srs.py link ID --follows REF [--context "..."] | link ID --clear   # mark a follow-up question
+  python3 scripts/srs.py replay ID [ID ...]                 # rebuild schedule from history (after a rule change)
   python3 scripts/srs.py amend-key ID --reason "..." < key.json        # clarify a key; history stays valid
   python3 scripts/srs.py invalidate-key ID --reason "..." < key.json   # wrong key; old attempts no longer count
 """
@@ -76,7 +78,8 @@ def sm2_step(card: dict, q: int) -> None:
     else:
         reps += 1
         if reps == 1:
-            interval = 1
+            # first pass: next day, except a 4-5 right after a lapse (relearning), which waits 3 days
+            interval = 3 if q >= 4 and int(card.get("lapses", 0)) > 0 else 1
         elif reps == 2:
             interval = 6
         else:
@@ -638,6 +641,17 @@ def cmd_suspend(args, value=True):
         print(f"{card['id']} {'suspended' if value else 'active'}")
 
 
+def cmd_replay(args):
+    """Rebuild the schedule of the named cards from their valid history (after a rule change)."""
+    with L.Store(write=True) as st:
+        for cid in args.ids:
+            card = find(st.deck, cid)
+            old = (card.get("due"), card.get("interval"))
+            recompute_from_history(card)
+            print(f"{card['id']} due {old[0]} ({old[1]}d) -> {card['due']} ({card['interval']}d)")
+        st.commit()
+
+
 def cmd_link(args):
     with L.Store(write=True) as st:
         card = find(st.deck, args.id)
@@ -704,6 +718,7 @@ def main(argv=None):
     p = sub.add_parser("forecast"); p.add_argument("--days", type=int, default=14); p.set_defaults(fn=cmd_forecast)
     p = sub.add_parser("suspend"); p.add_argument("id"); p.set_defaults(fn=lambda a: cmd_suspend(a, True))
     p = sub.add_parser("unsuspend"); p.add_argument("id"); p.set_defaults(fn=lambda a: cmd_suspend(a, False))
+    p = sub.add_parser("replay"); p.add_argument("ids", nargs="+"); p.set_defaults(fn=cmd_replay)
     p = sub.add_parser("link"); p.add_argument("id"); p.add_argument("--follows"); p.add_argument("--context")
     p.add_argument("--clear", action="store_true"); p.set_defaults(fn=cmd_link)
     p = sub.add_parser("amend-key"); p.add_argument("id"); p.add_argument("--reason", required=True); p.set_defaults(fn=cmd_amend_key)

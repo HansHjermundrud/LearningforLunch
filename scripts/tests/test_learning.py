@@ -502,6 +502,20 @@ class TestSrsRules(Base):
         c = self.card(cid)
         self.assertEqual((c["reps"], c["interval"], c["due"], c["lapses"]), (0, 1, "2026-10-03", 1))
 
+    def test_first_pass_after_lapse_waits_three_days_for_4_and_5(self):
+        cid = self.make_card()
+        self.srs("grade", cid, "2", "--kind", "initial")  # lapse, due 09-26
+        self.srs("grade", cid, "4", "--kind", "review", now="2026-09-26T09:00:00+02:00")
+        c = self.card(cid)
+        self.assertEqual((c["reps"], c["interval"], c["due"]), (1, 3, "2026-09-29"))
+        other = self.make_card()
+        self.srs("grade", other, "2", "--kind", "initial")
+        self.srs("grade", other, "3", "--kind", "review", now="2026-09-26T09:00:00+02:00")
+        self.assertEqual((self.card(other)["interval"], self.card(other)["due"]), (1, "2026-09-27"), "a 3 stays at 1 day")
+        fresh = self.make_card()
+        self.srs("grade", fresh, "5", "--kind", "initial")
+        self.assertEqual(self.card(fresh)["interval"], 1, "a card's very first pass is still 1 day")
+
     def test_early_review_does_not_accelerate(self):
         cid = self.make_card()
         self.srs("grade", cid, "4", "--kind", "initial")

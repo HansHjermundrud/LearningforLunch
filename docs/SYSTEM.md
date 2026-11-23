@@ -91,6 +91,7 @@ Correcting a grade: `state.py regrade Q --reason "..." [--target ATTEMPT|CARD] [
 - Attempt kinds: `initial` (the node's check), `practice`/`repair` (a reattempt right after an explanation), `review` (scheduled retrieval), `exit`.
 - Success (q ≥ 3) on `practice`/`repair`: history only. Success on a day the card already advanced: history only. `review` before the due date: history only, marked `early`. Otherwise SM-2 advances (reps, interval, ease) and `last_graduated` is set.
 - Any failure (q < 3): lapse, interval 1, due tomorrow, ease down, `lapses`+1. Same-day failure counts.
+- The first pass after a lapse (relearning) waits 3 days for q 4-5 and 1 day for q 3; a card's very first pass is always 1 day. Then 6 days, then interval x ease. Regrade replays the history, so it follows the same rule. `srs.py replay ID...` rebuilds a card's schedule from its history after a rule change.
 - `--op ID` (or `"op"` in `record`) makes replays no-ops (the id is stored in `applied_ops` of both files).
 - Ease changes only when the schedule changes, so repetition cannot inflate it.
 - Days are computed in the configured timezone.
@@ -122,7 +123,7 @@ Restore: `python3 scripts/state.py restore --list`, then `restore state/backups/
 
 `state.py`: `show [--full]`, `topics`, `validate`, `migrate`, `backup`, `restore`, `history`, `start`, `goal`, `edge`, `pause`, `resume`, `stop`, `finish`, `log-target`, `plan-set`, `plan-show`, `plan-approve`, `node-add`, `node-edit`, `next-node`, `node-done`, `node-shaky`, `readiness`, `scope`, `next`, `checkpoint`, `correction`, `prep-topic`, `prep-node`, `prep-show`, `prep-status`, `source-add`, `source-digest`, `source-show`, `ask`, `pending`, `answer`, `hint`, `record`, `regrade`.
 
-`srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `link`, `amend-key`, `invalidate-key`.
+`srs.py`: `add`, `promote`, `due`, `grade`, `stats`, `list`, `show`, `history`, `forecast`, `suspend`, `unsuspend`, `link`, `replay`, `amend-key`, `invalidate-key`.
 
 `exercise.py`: `env`, `new`, `check [--file]`, `validate`, `list`.
 
